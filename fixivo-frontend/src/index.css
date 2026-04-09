@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@layer components {
+  .nav-link {
+    @apply text-gray-600 hover:text-blue-700 text-sm font-medium transition;
+  }
+
+  .dropdown-menu {
+    @apply absolute top-full left-0 mt-2 w-52 bg-white rounded-xl shadow-lg border py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition;
+  }
+
+  .dropdown-item {
+    @apply block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700;
+  }
+
+  .btn-outline {
+    @apply px-4 py-2 border border-blue-700 text-blue-700 rounded-xl hover:bg-blue-700 hover:text-white transition text-sm;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-700 text-white rounded-xl hover:bg-blue-900 text-sm;
+  }
+
+  .btn-orange {
+    @apply px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 text-sm;
+  }
+}
