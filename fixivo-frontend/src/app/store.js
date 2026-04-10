@@ -1,8 +1,8 @@
 import { configureStore } from "@reduxjs/toolkit";
+import authReducer from "./slices/authSlice";
 
 export const store = configureStore({
   reducer: {
-    // Dummy reducer to prevent the 'valid reducer' error until you add real slices
-    _placeholder: (state = {}) => state,
+    auth: authReducer,
   },
 });

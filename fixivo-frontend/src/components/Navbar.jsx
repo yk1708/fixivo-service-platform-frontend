@@ -69,7 +69,7 @@
             {/* Desktop Buttons */}
             <div className="hidden md:flex items-center gap-2">
                 <Link to="/login" className="btn-outline">Login</Link>
-                <Link to="/login?tab=signup" className="btn-primary">Sign Up</Link>
+                <Link to="/signup" className="btn-primary">Sign Up</Link>
 
             </div>
 
