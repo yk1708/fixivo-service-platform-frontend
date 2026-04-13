@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Phone, Mail, Lock, ArrowLeft, Wrench, CheckCircle } from 'lucide-react';
 import { ImageWithFallback } from '../../components/error/error';
 import { useMutation } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { setAuth } from '../../app/slices/authSlice';
+import { useToast, ToastContainer } from '../../components/Toast';
 
 const ILLUSTRATION = 'https://images.unsplash.com/photo-1587813723351-a43ed2cae4d7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=900';
 
@@ -12,66 +13,98 @@ const API_BASE_URL = import.meta.env.VITE_FIXIVO_APP_API_URL || 'http://localhos
 
 // API helper functions
 const registerCustomerAPI = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/auth/customer/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Registration failed');
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/customer/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Registration failed');
+    }
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(`Network error: Cannot connect to ${API_BASE_URL}. Make sure the backend server is running.`);
+    }
+    throw error;
   }
-  return response.json();
 };
 
 const loginCustomerAPI = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/auth/customer/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Login failed');
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/customer/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
+    }
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(`Network error: Cannot connect to ${API_BASE_URL}. Make sure the backend server is running.`);
+    }
+    throw error;
   }
-  return response.json();
 };
 
 const registerProviderAPI = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/auth/provider/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Registration failed');
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/provider/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    console.log('Register Provider API Response:', response);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Registration failed');
+    }
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(`Network error: Cannot connect to ${API_BASE_URL}. Make sure the backend server is running.`);
+    }
+    throw error;
   }
-  return response.json();
 };
 
 const loginProviderAPI = async (data) => {
-  const response = await fetch(`${API_BASE_URL}/auth/provider/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Login failed');
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/provider/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
+    }
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(`Network error: Cannot connect to ${API_BASE_URL}. Make sure the backend server is running.`);
+    }
+    throw error;
   }
-  return response.json();
 };
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
-  const location = window.location.pathname;
+  const { toasts, showToast, removeToast } = useToast();
+  
+  // Detect if this is signup or login page based on URL
+  const isSignupPage = location.pathname === '/signup' || searchParams.get('tab') === 'signup';
+  
   const [loginType, setLoginType] = useState('customer');
-  const [formMode, setFormMode] = useState(
-    location.includes('/signup') || searchParams.get('tab') === 'signup' ? 'signup' : 'login'
-  );
+  const [formMode, setFormMode] = useState(isSignupPage ? 'signup' : 'login');
   const [showPassword, setShowPassword] = useState(false);
   const [usePhone, setUsePhone] = useState(false);
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
@@ -91,6 +124,23 @@ function LoginPage() {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
 
+  // Update form mode when location changes
+  useEffect(() => {
+    setFormMode(isSignupPage ? 'signup' : 'login');
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      password: '',
+      serviceType: '',
+      experience: '',
+      availability: '',
+      location: ''
+    });
+    setErrors({});
+    setApiError('');
+  }, [location.pathname]);
+
   // Mutations
   const registerCustomerMutation = useMutation({
     mutationFn: registerCustomerAPI,
@@ -102,10 +152,12 @@ function LoginPage() {
         refreshToken: null,
         role: 'customer'
       }));
-      navigate('/');
+      showToast(`Welcome ${data.user?.name}! Account created successfully.`, 'success');
+      setTimeout(() => navigate('/dashboard'), 1000);
     },
     onError: (error) => {
       setApiError(error.message);
+      showToast(error.message, 'error');
     }
   });
 
@@ -119,10 +171,12 @@ function LoginPage() {
         refreshToken: data.refreshToken,
         role: 'customer'
       }));
-      navigate('/');
+      showToast(`Welcome back, ${data.user?.name}!`, 'success');
+      setTimeout(() => navigate('/dashboard'), 1000);
     },
     onError: (error) => {
       setApiError(error.message);
+      showToast(error.message, 'error');
     }
   });
 
@@ -136,10 +190,12 @@ function LoginPage() {
         refreshToken: null,
         role: 'provider'
       }));
-      navigate('/');
+      showToast(`Welcome ${data.user?.name}! Professional account created successfully.`, 'success');
+      setTimeout(() => navigate('/login'), 500);
     },
     onError: (error) => {
       setApiError(error.message);
+      showToast(error.message, 'error');
     }
   });
 
@@ -153,10 +209,12 @@ function LoginPage() {
         refreshToken: data.refreshToken,
         role: 'provider'
       }));
-      navigate('/');
+      showToast(`Welcome back, ${data.user?.name}!`, 'success');
+      setTimeout(() => navigate('/dashboard'), 1000);
     },
     onError: (error) => {
       setApiError(error.message);
+      showToast(error.message, 'error');
     }
   });
 
@@ -210,15 +268,6 @@ function LoginPage() {
         if (!formData.serviceType) {
           newErrors.serviceType = 'Service type is required';
         }
-        if (!formData.experience) {
-          newErrors.experience = 'Experience is required';
-        }
-        if (!formData.availability) {
-          newErrors.availability = 'Availability is required';
-        }
-        if (!formData.location.trim()) {
-          newErrors.location = 'Service location is required';
-        }
       }
     } else {
       // Login validation
@@ -262,10 +311,7 @@ function LoginPage() {
         password: formData.password,
         phone: formData.phone,
         ...(loginType === 'worker' && {
-          serviceType: formData.serviceType,
-          experience: parseInt(formData.experience),
-          availability: formData.availability,
-          location: formData.location
+          serviceType: formData.serviceType
         })
       };
     } else {
@@ -303,7 +349,9 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <div className="min-h-screen flex" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Left Illustration Panel */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#1E40AF]">
         <ImageWithFallback
@@ -517,50 +565,6 @@ function LoginPage() {
                       </select>
                       {errors.serviceType && <p className="text-red-500 text-xs mt-1">{errors.serviceType}</p>}
                     </div>
-
-                    <div>
-                      <label className="block text-gray-700 text-xs mb-1.5" style={{ fontWeight: 600 }}>Years of Experience</label>
-                      <input
-                        type="number"
-                        name="experience"
-                        value={formData.experience}
-                        onChange={handleInputChange}
-                        min="0"
-                        placeholder="Enter years of experience"
-                        className={`w-full px-4 py-3.5 bg-white border rounded-2xl text-sm text-gray-700 outline-none transition-all ${errors.experience ? 'border-red-500 focus:ring-2 focus:ring-red-300' : 'border-gray-200 focus:border-[#1E40AF] focus:ring-2 focus:ring-[#1E40AF]/10'}`}
-                      />
-                      {errors.experience && <p className="text-red-500 text-xs mt-1">{errors.experience}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-700 text-xs mb-1.5" style={{ fontWeight: 600 }}>Availability</label>
-                      <select 
-                        name="availability"
-                        value={formData.availability}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-3.5 bg-white border rounded-2xl text-sm text-gray-700 outline-none transition-all ${errors.availability ? 'border-red-500 focus:ring-2 focus:ring-red-300' : 'border-gray-200 focus:border-[#1E40AF]'}`}
-                      >
-                        <option value="">Select availability</option>
-                        <option value="Full-time">Full-time</option>
-                        <option value="Part-time">Part-time</option>
-                        <option value="Flexible">Flexible</option>
-                        <option value="Weekends only">Weekends only</option>
-                      </select>
-                      {errors.availability && <p className="text-red-500 text-xs mt-1">{errors.availability}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-700 text-xs mb-1.5" style={{ fontWeight: 600 }}>Service Location</label>
-                      <input
-                        type="text"
-                        name="location"
-                        value={formData.location}
-                        onChange={handleInputChange}
-                        placeholder="Enter your service area/city"
-                        className={`w-full px-4 py-3.5 bg-white border rounded-2xl text-sm text-gray-700 outline-none transition-all ${errors.location ? 'border-red-500 focus:ring-2 focus:ring-red-300' : 'border-gray-200 focus:border-[#1E40AF] focus:ring-2 focus:ring-[#1E40AF]/10'}`}
-                      />
-                      {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
-                    </div>
                   </>
                 )}
 
@@ -746,7 +750,8 @@ function LoginPage() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
