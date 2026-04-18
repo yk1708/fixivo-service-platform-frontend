@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, X, CheckCircle2, Star, MapPin, Briefcase, Clock,
   Send, LogOut, Bell, User, Wrench, ChevronRight, AlertCircle,
-  RefreshCw, Calendar, FileText
+  RefreshCw, Calendar, FileText, Info
 } from 'lucide-react';
 import { logout } from '../../app/slices/authSlice';
 import './dashboard.css';
@@ -208,6 +208,10 @@ export default function CustomerDashboard() {
   const [search, setSearch] = useState('');
   const [selectedService, setSelectedService] = useState('all');
   const [bookingProvider, setBookingProvider] = useState(null);
+  const [activeTab, setActiveTab] = useState('explore');
+  const [myRequests, setMyRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState('');
 
   const fetchProviders = async () => {
     setLoading(true);
@@ -216,7 +220,6 @@ export default function CustomerDashboard() {
       const res = await fetch(`${API_BASE_URL}/api/customer/verified-providers`);
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to fetch providers');
       const data = await res.json();
-      console.log('Fetched providers:', data);
       setProviders(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message);
@@ -225,7 +228,32 @@ export default function CustomerDashboard() {
     }
   };
 
-  useEffect(() => { fetchProviders(); }, []);
+  const fetchMyRequests = async () => {
+    setRequestsLoading(true);
+    setRequestsError('');
+    try {
+      const token = accessToken || localStorage.getItem('accessToken');
+      const res = await fetch(`${API_BASE_URL}/api/request/customer-requests-status`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to fetch requests');
+      const data = await res.json();
+      console.log("customer dashboard requests data",data);
+      setMyRequests(data.requests || []);
+      
+    } catch (err) {
+      setRequestsError(err.message);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'explore') fetchProviders();
+    if (activeTab === 'requests') fetchMyRequests();
+  }, [accessToken, activeTab]);
 
   const filtered = providers.filter(p => {
     const name = p.userId?.name?.toLowerCase() || '';
@@ -256,10 +284,16 @@ export default function CustomerDashboard() {
 
         <nav className="customer-nav">
           <p className="customer-nav-label">Main Menu</p>
-          <button className="customer-nav-item active">
+          <button
+            className={`customer-nav-item ${activeTab === 'explore' ? 'active' : ''}`}
+            onClick={() => setActiveTab('explore')}
+          >
             <User size={18} /> Find Providers
           </button>
-          <button className="customer-nav-item">
+          <button
+            className={`customer-nav-item ${activeTab === 'requests' ? 'active' : ''}`}
+            onClick={() => setActiveTab('requests')}
+          >
             <FileText size={18} /> My Requests
           </button>
           <button className="customer-nav-item">
@@ -288,85 +322,174 @@ export default function CustomerDashboard() {
         {/* Topbar */}
         <header className="customer-topbar">
           <div>
-            <h1 className="customer-page-title">Find Professionals</h1>
+            <h1 className="customer-page-title">
+              {activeTab === 'explore' ? 'Find Professionals' : 'My Service Requests'}
+            </h1>
             <p className="customer-page-sub">
-              {filtered.length} verified provider{filtered.length !== 1 ? 's' : ''} available
+              {activeTab === 'explore'
+                ? `${filtered.length} verified provider${filtered.length !== 1 ? 's' : ''} available`
+                : `${myRequests.length} request${myRequests.length !== 1 ? 's' : ''} total`
+              }
             </p>
           </div>
           <div className="customer-topbar-actions">
             <button className="customer-icon-btn" title="Notifications">
               <Bell size={20} />
             </button>
-            <button onClick={fetchProviders} className="customer-refresh-btn">
+            <button
+              onClick={activeTab === 'explore' ? fetchProviders : fetchMyRequests}
+              className="customer-refresh-btn"
+            >
               <RefreshCw size={16} />
               Refresh
             </button>
           </div>
         </header>
 
-        {/* Search & Filter */}
-        <div className="customer-search-bar">
-          <div className="customer-search-input-wrap">
-            <Search size={18} className="customer-search-icon" />
-            <input
-              type="text"
-              placeholder="Search by name or service…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="customer-search-input"
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="customer-search-clear">
-                <X size={16} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Service Filter Pills */}
-        <div className="customer-service-pills">
-          {serviceTypes.map(s => (
-            <button
-              key={s}
-              onClick={() => setSelectedService(s)}
-              className={`customer-pill ${selectedService === s ? 'active' : ''}`}
-            >
-              {s === 'all' ? '✨ All Services' : s}
-            </button>
-          ))}
-        </div>
-
-        {/* Providers Grid */}
-        <section className="customer-providers-section">
-          {loading ? (
-            <div className="customer-loading">
-              <div className="customer-spinner" />
-              <p>Loading providers…</p>
-            </div>
-          ) : error ? (
-            <div className="customer-error">
-              <AlertCircle size={40} color="#EF4444" />
-              <p>{error}</p>
-              <button onClick={fetchProviders} className="customer-retry-btn">Try Again</button>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="customer-empty">
-              <User size={56} color="#D1D5DB" />
-              <h3>No providers found</h3>
-              <p>Try adjusting your search or filter.</p>
-            </div>
-          ) : (
-            <div className="customer-providers-grid">
-              {filtered.map(provider => (
-                <ProviderCard
-                  key={provider._id}
-                  provider={provider}
-                  onBook={setBookingProvider}
+        {activeTab === 'explore' ? (
+          <>
+            {/* Search & Filter */}
+            <div className="customer-search-bar">
+              <div className="customer-search-input-wrap">
+                <Search size={18} className="customer-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search by name or service…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="customer-search-input"
                 />
+                {search && (
+                  <button onClick={() => setSearch('')} className="customer-search-clear">
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Service Filter Pills */}
+            <div className="customer-service-pills">
+              {serviceTypes.map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSelectedService(s)}
+                  className={`customer-pill ${selectedService === s ? 'active' : ''}`}
+                >
+                  {s === 'all' ? '✨ All Services' : s}
+                </button>
               ))}
             </div>
-          )}
-        </section>
+
+            {/* Providers Grid */}
+            <section className="customer-providers-section">
+              {loading ? (
+                <div className="customer-loading">
+                  <div className="customer-spinner" />
+                  <p>Loading providers…</p>
+                </div>
+              ) : error ? (
+                <div className="customer-error">
+                  <AlertCircle size={40} color="#EF4444" />
+                  <p>{error}</p>
+                  <button onClick={fetchProviders} className="customer-retry-btn">Try Again</button>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="customer-empty">
+                  <User size={56} color="#D1D5DB" />
+                  <h3>No providers found</h3>
+                  <p>Try adjusting your search or filter.</p>
+                </div>
+              ) : (
+                <div className="customer-providers-grid">
+                  {filtered.map(provider => (
+                    <ProviderCard
+                      key={provider._id}
+                      provider={provider}
+                      onBook={setBookingProvider}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        ) : (
+          /* My Requests Tab Content */
+          <section className="customer-requests-section">
+            {requestsLoading ? (
+              <div className="customer-loading">
+                <div className="customer-spinner" />
+                <p>Fetching your requests…</p>
+              </div>
+            ) : requestsError ? (
+              <div className="customer-error">
+                <AlertCircle size={40} color="#EF4444" />
+                <p>{requestsError}</p>
+                <button onClick={fetchMyRequests} className="customer-retry-btn">Try Again</button>
+              </div>
+            ) : myRequests.length === 0 ? (
+              <div className="customer-empty">
+                <FileText size={56} color="#D1D5DB" />
+                <h3>No requests yet</h3>
+                <p>Start by finding a professional to help you.</p>
+                <button onClick={() => setActiveTab('explore')} className="customer-retry-btn">
+                  Explore Providers
+                </button>
+              </div>
+            ) : (
+              <div className="customer-requests-list">
+                {myRequests.map(req => (
+                  <div key={req._id} className="customer-request-card-alt">
+                    <div className="customer-req-header">
+                      <div className="customer-req-provider-info">
+                        <div className="customer-req-avatar">
+                          {req.providerId?.name?.[0]?.toUpperCase() || 'P'}
+                        </div>
+                        <div>
+                          <p className="customer-req-provider-name">{req.providerId?.name || 'Unknown Provider'}</p>
+                          <p className="customer-req-service">{req.requestDetails?.serviceType || 'General Service'}</p>
+                        </div>
+                      </div>
+                      <div className={`customer-status-badge ${req.status?.toLowerCase()}`}>
+                        {req.status}
+                      </div>
+                    </div>
+
+                    <div className="customer-req-body">
+                      <div className="customer-req-detail-item">
+                        <Info size={14} />
+                        <p>{req.requestDetails?.details}</p>
+                      </div>
+                      {req.requestDetails?.scheduledTime && (
+                        <div className="customer-req-detail-item">
+                          <Clock size={14} />
+                          <span>Scheduled: {new Date(req.requestDetails.scheduledTime).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                        </div>
+                      )}
+                      <div className="customer-req-detail-item">
+                        <Calendar size={14} />
+                        <span>Created: {(req.createdAt || req.updatedAt) ? new Date(req.createdAt || req.updatedAt).toLocaleDateString() : 'N/A'}</span>
+                      </div>
+                    </div>
+
+                    <div className="customer-req-footer">
+                      <div className="customer-req-contact">
+                        {req.providerId?.phone && (
+                          <p><span>Phone:</span> {req.providerId.phone}</p>
+                        )}
+                        {req.providerId?.email && (
+                          <p><span>Email:</span> {req.providerId.email}</p>
+                        )}
+                      </div>
+                      <button className="customer-view-details-btn">
+                        View Details <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </main>
 
       {/* Booking Modal */}
@@ -374,7 +497,10 @@ export default function CustomerDashboard() {
         <RequestModal
           provider={bookingProvider}
           onClose={() => setBookingProvider(null)}
-          onSuccess={() => {}}
+          onSuccess={() => {
+            fetchMyRequests();
+            fetchProviders();
+          }}
         />
       )}
     </div>
