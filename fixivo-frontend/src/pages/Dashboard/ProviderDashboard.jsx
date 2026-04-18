@@ -72,7 +72,7 @@ export default function ProviderDashboard() {
     setError('');
     try {
       const token = accessToken || localStorage.getItem('accessToken');
-      const res = await fetch(`${API_BASE_URL}/api/request`, {
+      const res = await fetch(`${API_BASE_URL}/api/request/see-requests-inside-provider-dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
