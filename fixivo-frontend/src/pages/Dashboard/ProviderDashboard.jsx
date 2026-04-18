@@ -59,6 +59,7 @@ export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
+  const [confirmRejectId, setConfirmRejectId] = useState(null);
 
   // Redirect if profile not complete
   useEffect(() => {
@@ -88,6 +89,54 @@ export default function ProviderDashboard() {
     }
   };
 
+  const handleAcceptRequest = async (requestId) => {
+    if (!provider?.isVerified) {
+      alert('Please complete your profile before accepting requests.');
+      navigate('/dashboard');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = accessToken || localStorage.getItem('accessToken');
+      const res = await fetch(`${API_BASE_URL}/api/request/accept-request/${requestId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ requestId })
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to accept request');
+      await fetchRequests(); 
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    setLoading(true);
+    try{
+      const token = accessToken || localStorage.getItem('accessToken');
+      const res = await fetch(`${API_BASE_URL}/api/request/reject-request/${requestId}`,{
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ requestId })
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to reject request');
+      await fetchRequests(); 
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => { fetchRequests(); }, []);
 
   const filtered = filter === 'all' ? requests : requests.filter(r => r.status === filter);
@@ -104,16 +153,7 @@ export default function ProviderDashboard() {
     navigate('/login');
   };
 
-  const handleAcceptRequest = async (requestId) => {
-    // Verify profile is complete before accepting
-    if (!provider?.isVerified) {
-      alert('Please complete your profile before accepting requests.');
-      navigate('/dashboard');
-      return;
-    }
-    // Add your accept request logic here
-    console.log('Accepting request:', requestId);
-  };
+
 
   return (
     <div className="provider-dashboard">
@@ -283,22 +323,34 @@ export default function ProviderDashboard() {
                     </div>
 
                     <div className="provider-request-footer">
-                      <span className="provider-request-date">
-                        {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                      </span>
-                      {req.status === 'pending' && (
-                        <button 
-                          onClick={() => handleAcceptRequest(req._id)}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-sm flex items-center gap-2 transition"
-                        >
-                          Accept <ChevronRight size={14} />
-                        </button>
-                      )}
-                      {req.status !== 'pending' && (
-                        <button className="provider-view-btn">
-                          View Details <ChevronRight size={14} />
-                        </button>
-                      )}
+                      <div className="provider-request-meta">
+                        <span className="provider-request-date">
+                          {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </span>
+                      </div>
+                      
+                      <div className="provider-request-actions">
+                        {req.status === 'pending' ? (
+                          <>
+                            <button 
+                              onClick={() => handleAcceptRequest(req._id)}
+                              className="provider-action-btn accept"
+                            >
+                              Accept
+                            </button>
+                            <button 
+                              onClick={() => setConfirmRejectId(req._id)}
+                              className="provider-action-btn reject"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <button className="provider-view-btn">
+                            View Details <ChevronRight size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -307,6 +359,39 @@ export default function ProviderDashboard() {
           )}
         </section>
       </main>
+
+      {/* Rejection Confirmation Modal */}
+      {confirmRejectId && (
+        <div className="modal-overlay" onClick={() => setConfirmRejectId(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-icon-wrap reject">
+                <AlertCircle size={24} color="#EF4444" />
+              </div>
+              <h2 className="modal-title">Reject Request?</h2>
+              <p className="modal-sub">This action cannot be undone. The customer will be notified.</p>
+            </div>
+            
+            <div className="modal-footer">
+              <button 
+                className="modal-cancel-btn"
+                onClick={() => setConfirmRejectId(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-confirm-btn reject"
+                onClick={() => {
+                  handleRejectRequest(confirmRejectId);
+                  setConfirmRejectId(null);
+                }}
+              >
+                Yes, Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
