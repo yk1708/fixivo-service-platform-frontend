@@ -5,7 +5,7 @@ import {
     Info, CheckCircle2, AlertCircle, ShieldCheck, Lock
 } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_FIXIVO_APP_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_FIXIVO_APP_API_URL;
 
 export default function ProviderDetails({ requestId, onClose, onSuccess }) {
     const { accessToken } = useSelector(s => s.auth);

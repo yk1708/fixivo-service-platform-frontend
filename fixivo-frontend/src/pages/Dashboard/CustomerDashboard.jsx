@@ -9,7 +9,7 @@ import {
 import { logout } from '../../app/slices/authSlice';
 import './dashboard.css';
 
-const API_BASE_URL = import.meta.env.VITE_FIXIVO_APP_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_FIXIVO_APP_API_URL;
 
 const SERVICE_TYPES = [
   'Plumber', 'Electrician', 'AC Technician', 'Home Cleaner',
