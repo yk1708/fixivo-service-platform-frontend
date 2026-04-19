@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, X, CheckCircle2, Star, MapPin, Briefcase, Clock,
   Send, LogOut, Bell, User, Wrench, ChevronRight, AlertCircle,
-  RefreshCw, Calendar, FileText, Info
+  RefreshCw, Calendar, FileText, Info, ShieldAlert, Key
 } from 'lucide-react';
 import { logout } from '../../app/slices/authSlice';
 import './dashboard.css';
@@ -208,10 +208,17 @@ export default function CustomerDashboard() {
   const [search, setSearch] = useState('');
   const [selectedService, setSelectedService] = useState('all');
   const [bookingProvider, setBookingProvider] = useState(null);
-  const [activeTab, setActiveTab] = useState('explore');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('customerActiveTab') || 'explore';
+  });
   const [myRequests, setMyRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState('');
+
+  // Save active tab to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('customerActiveTab', activeTab);
+  }, [activeTab]);
 
   const fetchProviders = async () => {
     setLoading(true);
@@ -471,6 +478,17 @@ export default function CustomerDashboard() {
                       </div>
                     </div>
 
+                    {req.otp && req.status !== 'completed' && (
+                      <div className="customer-otp-card">
+                        <div className="customer-otp-header">
+                          <ShieldAlert size={14} />
+                          <span>Completion OTP</span>
+                        </div>
+                        <div className="customer-otp-value">{req.otp}</div>
+                        <p className="customer-otp-hint">Share this code with the provider only when the work is done.</p>
+                      </div>
+                    )}
+
                     <div className="customer-req-footer">
                       <div className="customer-req-contact">
                         {req.providerId?.phone && (
@@ -492,7 +510,6 @@ export default function CustomerDashboard() {
         )}
       </main>
 
-      {/* Booking Modal */}
       {bookingProvider && (
         <RequestModal
           provider={bookingProvider}

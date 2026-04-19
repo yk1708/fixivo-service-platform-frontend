@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ProviderDetails from '../../components/ProviderDetails';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -58,10 +59,17 @@ export default function ProviderDashboard() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(() => {
+    return localStorage.getItem('providerFilterTab') || 'all';
+  });
   const [confirmRejectId, setConfirmRejectId] = useState(null);
+  const [viewRequestId, setViewRequestId] = useState(null);
 
-  // Redirect if profile not complete
+  // Save filter to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('providerFilterTab', filter);
+  }, [filter]);
+
   useEffect(() => {
     if (!provider?.isVerified) {
       navigate('/dashboard', { replace: true });
@@ -157,7 +165,6 @@ export default function ProviderDashboard() {
 
   return (
     <div className="provider-dashboard">
-      {/* Sidebar */}
       <aside className="provider-sidebar">
         <div className="provider-sidebar-logo">
           <div className="provider-logo-icon">
@@ -204,16 +211,14 @@ export default function ProviderDashboard() {
         </div>
       </aside>
 
-      {/* Main Content */}
+
       <main className="provider-main">
-        {/* Top Bar */}
         <header className="provider-topbar">
           <div>
             <h1 className="provider-page-title">Dashboard</h1>
             <p className="provider-page-sub">Welcome back, {user?.name || 'Provider'}! 👋</p>
           </div>
           <div className="provider-topbar-actions">
-            {/* Profile Verification Status */}
             <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
               <Shield size={18} className="text-green-600" />
               <span className="text-sm font-semibold text-green-700">Profile Verified</span>
@@ -257,7 +262,6 @@ export default function ProviderDashboard() {
           ))}
         </div>
 
-        {/* Requests List */}
         <section className="provider-requests-section">
           {loading ? (
             <div className="provider-loading">
@@ -346,7 +350,10 @@ export default function ProviderDashboard() {
                             </button>
                           </>
                         ) : (
-                          <button className="provider-view-btn">
+                          <button 
+                            onClick={() => setViewRequestId(req._id)}
+                            className="provider-view-btn"
+                          >
                             View Details <ChevronRight size={14} />
                           </button>
                         )}
@@ -360,7 +367,6 @@ export default function ProviderDashboard() {
         </section>
       </main>
 
-      {/* Rejection Confirmation Modal */}
       {confirmRejectId && (
         <div className="modal-overlay" onClick={() => setConfirmRejectId(null)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -391,6 +397,16 @@ export default function ProviderDashboard() {
             </div>
           </div>
         </div>
+      )}
+      {viewRequestId && (
+        <ProviderDetails
+          requestId={viewRequestId}
+          onClose={() => setViewRequestId(null)}
+          onSuccess={() => {
+            setViewRequestId(null);
+            fetchRequests();
+          }}
+        />
       )}
     </div>
   );
