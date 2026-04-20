@@ -8,6 +8,7 @@ import {
   Bell, TrendingUp, Star, Briefcase, Shield, Edit
 } from 'lucide-react';
 import { logout } from '../../app/slices/authSlice';
+import NotificationBell from '../../components/NotificationBell';
 import './dashboard.css';
 
 const API_BASE_URL = import.meta.env.VITE_FIXIVO_APP_API_URL;
@@ -223,12 +224,7 @@ export default function ProviderDashboard() {
               <Shield size={18} className="text-green-600" />
               <span className="text-sm font-semibold text-green-700">Profile Verified</span>
             </div>
-            <button className="provider-icon-btn" title="Notifications">
-              <Bell size={20} />
-              {stats.pending > 0 && (
-                <span className="provider-notif-badge">{stats.pending}</span>
-              )}
-            </button>
+            <NotificationBell />
             <button onClick={fetchRequests} className="provider-refresh-btn">
               <RefreshCw size={16} />
               Refresh

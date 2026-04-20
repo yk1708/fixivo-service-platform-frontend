@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, X, CheckCircle2, Star, MapPin, Briefcase, Clock,
   Send, LogOut, Bell, User, Wrench, ChevronRight, AlertCircle,
-  RefreshCw, Calendar, FileText, Info, ShieldAlert, Key
+  RefreshCw, Calendar, FileText, Info, ShieldAlert, Key, AlertTriangle
 } from 'lucide-react';
 import { logout } from '../../app/slices/authSlice';
+import NotificationBell from '../../components/NotificationBell';
+import EmergencyService from '../../components/EmergencyService';
 import './dashboard.css';
 
 const API_BASE_URL = import.meta.env.VITE_FIXIVO_APP_API_URL;
@@ -303,6 +305,12 @@ export default function CustomerDashboard() {
           >
             <FileText size={18} /> My Requests
           </button>
+          <button
+            className={`customer-nav-item ${activeTab === 'emergency' ? 'active' : ''}`}
+            onClick={() => setActiveTab('emergency')}
+          >
+            <AlertTriangle size={18} /> Emergency
+          </button>
           <button className="customer-nav-item">
             <Star size={18} /> Reviews
           </button>
@@ -330,19 +338,19 @@ export default function CustomerDashboard() {
         <header className="customer-topbar">
           <div>
             <h1 className="customer-page-title">
-              {activeTab === 'explore' ? 'Find Professionals' : 'My Service Requests'}
+              {activeTab === 'explore' ? 'Find Professionals' : activeTab === 'emergency' ? 'Emergency Service' : 'My Service Requests'}
             </h1>
             <p className="customer-page-sub">
               {activeTab === 'explore'
                 ? `${filtered.length} verified provider${filtered.length !== 1 ? 's' : ''} available`
+                : activeTab === 'emergency'
+                ? 'Request urgent help from nearby providers'
                 : `${myRequests.length} request${myRequests.length !== 1 ? 's' : ''} total`
               }
             </p>
           </div>
           <div className="customer-topbar-actions">
-            <button className="customer-icon-btn" title="Notifications">
-              <Bell size={20} />
-            </button>
+            <NotificationBell />
             <button
               onClick={activeTab === 'explore' ? fetchProviders : fetchMyRequests}
               className="customer-refresh-btn"
@@ -353,7 +361,9 @@ export default function CustomerDashboard() {
           </div>
         </header>
 
-        {activeTab === 'explore' ? (
+        {activeTab === 'emergency' ? (
+          <EmergencyService />
+        ) : activeTab === 'explore' ? (
           <>
             {/* Search & Filter */}
             <div className="customer-search-bar">
