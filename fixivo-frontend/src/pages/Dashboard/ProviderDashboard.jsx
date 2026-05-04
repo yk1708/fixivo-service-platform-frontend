@@ -5,10 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   ClipboardList, Clock, CheckCircle2, XCircle, AlertCircle,
   User, Wrench, Calendar, RefreshCw, LogOut, ChevronRight,
-  Bell, TrendingUp, Star, Briefcase, Shield, Edit
+  Bell, TrendingUp, Star, Briefcase, Shield, Edit, AlertTriangle
 } from 'lucide-react';
 import { logout } from '../../app/slices/authSlice';
 import NotificationBell from '../../components/NotificationBell';
+import EmergencyRequests from '../Tabs/EmergencyRequests';
 import './dashboard.css';
 
 const API_BASE_URL = import.meta.env.VITE_FIXIVO_APP_API_URL;
@@ -65,6 +66,7 @@ export default function ProviderDashboard() {
   });
   const [confirmRejectId, setConfirmRejectId] = useState(null);
   const [viewRequestId, setViewRequestId] = useState(null);
+  const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'emergencies', 'analytics', etc.
 
   // Save filter to localStorage when it changes
   useEffect(() => {
@@ -177,19 +179,38 @@ export default function ProviderDashboard() {
         <nav className="provider-nav">
           <div className="provider-nav-section">
             <p className="provider-nav-label">Overview</p>
-            <button className="provider-nav-item active">
+            <button 
+              onClick={() => setActiveTab('requests')}
+              className={`provider-nav-item ${activeTab === 'requests' ? 'active' : ''}`}
+            >
               <ClipboardList size={18} />
               My Requests
             </button>
-            <button className="provider-nav-item">
+            <button 
+              onClick={() => setActiveTab('emergencies')}
+              className={`provider-nav-item ${activeTab === 'emergencies' ? 'active' : ''}`}
+            >
+              <AlertTriangle size={18} className={activeTab !== 'emergencies' ? "text-red-500" : ""} />
+              Emergency Requests
+            </button>
+            <button 
+              onClick={() => setActiveTab('analytics')}
+              className={`provider-nav-item ${activeTab === 'analytics' ? 'active' : ''}`}
+            >
               <TrendingUp size={18} />
               Analytics
             </button>
-            <button className="provider-nav-item">
+            <button 
+              onClick={() => setActiveTab('reviews')}
+              className={`provider-nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
+            >
               <Star size={18} />
               Reviews
             </button>
-            <button className="provider-nav-item">
+            <button 
+              onClick={() => setActiveTab('services')}
+              className={`provider-nav-item ${activeTab === 'services' ? 'active' : ''}`}
+            >
               <Briefcase size={18} />
               My Services
             </button>
@@ -232,135 +253,165 @@ export default function ProviderDashboard() {
           </div>
         </header>
 
-        {/* Stats Row */}
-        <section className="provider-stats-row">
-          <StatCard icon={ClipboardList} label="Total Requests" value={stats.total}  color="#6366F1" bg="#EEF2FF" />
-          <StatCard icon={Clock}         label="Pending"        value={stats.pending} color="#F59E0B" bg="#FFFBEB" />
-          <StatCard icon={CheckCircle2}  label="Accepted"       value={stats.accepted} color="#10B981" bg="#ECFDF5" />
-          <StatCard icon={Star}          label="Completed"      value={stats.completed} color="#F97316" bg="#FFF7ED" />
-        </section>
+        {activeTab === 'requests' && (
+          <>
+            {/* Stats Row */}
+            <section className="provider-stats-row">
+              <StatCard icon={ClipboardList} label="Total Requests" value={stats.total}  color="#6366F1" bg="#EEF2FF" />
+              <StatCard icon={Clock}         label="Pending"        value={stats.pending} color="#F59E0B" bg="#FFFBEB" />
+              <StatCard icon={CheckCircle2}  label="Accepted"       value={stats.accepted} color="#10B981" bg="#ECFDF5" />
+              <StatCard icon={Star}          label="Completed"      value={stats.completed} color="#F97316" bg="#FFF7ED" />
+            </section>
 
-        {/* Filter Tabs */}
-        <div className="provider-filter-tabs">
-          {['all', 'pending', 'accepted', 'completed', 'rejected'].map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`provider-filter-tab ${filter === f ? 'active' : ''}`}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-              {f !== 'all' && requests.filter(r => r.status === f).length > 0 && (
-                <span className="provider-filter-count">
-                  {requests.filter(r => r.status === f).length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+            {/* Filter Tabs */}
+            <div className="provider-filter-tabs">
+              {['all', 'pending', 'accepted', 'completed', 'rejected'].map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`provider-filter-tab ${filter === f ? 'active' : ''}`}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                  {f !== 'all' && requests.filter(r => r.status === f).length > 0 && (
+                    <span className="provider-filter-count">
+                      {requests.filter(r => r.status === f).length}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
 
-        <section className="provider-requests-section">
-          {loading ? (
-            <div className="provider-loading">
-              <div className="provider-spinner" />
-              <p>Loading your requests…</p>
-            </div>
-          ) : error ? (
-            <div className="provider-error">
-              <AlertCircle size={40} color="#EF4444" />
-              <p>{error}</p>
-              <button onClick={fetchRequests} className="provider-retry-btn">Try Again</button>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="provider-empty">
-              <ClipboardList size={56} color="#D1D5DB" />
-              <h3>No requests yet</h3>
-              <p>When customers send you service requests, they'll appear here.</p>
-            </div>
-          ) : (
-            <div className="provider-requests-grid">
-              {filtered.map(req => {
-                const customer = req.customerId;
-                const scheduledDate = req.scheduledTime
-                  ? new Date(req.scheduledTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                  : null;
-                return (
-                  <div key={req._id} className="provider-request-card">
-                    <div className="provider-request-header">
-                      <div className="provider-request-avatar">
-                        {customer?.name?.[0]?.toUpperCase() || <User size={20} />}
-                      </div>
-                      <div className="provider-request-customer">
-                        <p className="provider-customer-name">{customer?.name || 'Customer'}</p>
-                        <p className="provider-customer-email">{customer?.email || ''}</p>
-                      </div>
-                      <StatusBadge status={req.status} />
-                    </div>
-
-                    <div className="provider-request-body">
-                      <div className="provider-request-row">
-                        <Wrench size={15} className="provider-request-icon" />
-                        <div>
-                          <p className="provider-request-field-label">Service</p>
-                          <p className="provider-request-field">{req.serviceType}</p>
+            <section className="provider-requests-section">
+              {loading ? (
+                <div className="provider-loading">
+                  <div className="provider-spinner" />
+                  <p>Loading your requests…</p>
+                </div>
+              ) : error ? (
+                <div className="provider-error">
+                  <AlertCircle size={40} color="#EF4444" />
+                  <p>{error}</p>
+                  <button onClick={fetchRequests} className="provider-retry-btn">Try Again</button>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="provider-empty">
+                  <ClipboardList size={56} color="#D1D5DB" />
+                  <h3>No requests yet</h3>
+                  <p>When customers send you service requests, they'll appear here.</p>
+                </div>
+              ) : (
+                <div className="provider-requests-grid">
+                  {filtered.map(req => {
+                    const customer = req.customerId;
+                    const scheduledDate = req.scheduledTime
+                      ? new Date(req.scheduledTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                      : null;
+                    return (
+                      <div key={req._id} className="provider-request-card">
+                        <div className="provider-request-header">
+                          <div className="provider-request-avatar">
+                            {customer?.name?.[0]?.toUpperCase() || <User size={20} />}
+                          </div>
+                          <div className="provider-request-customer">
+                            <p className="provider-customer-name">{customer?.name || 'Customer'}</p>
+                            <p className="provider-customer-email">{customer?.email || ''}</p>
+                          </div>
+                          <StatusBadge status={req.status} />
                         </div>
-                      </div>
-                      <div className="provider-request-row">
-                        <AlertCircle size={15} className="provider-request-icon" />
-                        <div>
-                          <p className="provider-request-field-label">Details</p>
-                          <p className="provider-request-field">{req.details}</p>
+
+                        <div className="provider-request-body">
+                          <div className="provider-request-row">
+                            <Wrench size={15} className="provider-request-icon" />
+                            <div>
+                              <p className="provider-request-field-label">Service</p>
+                              <p className="provider-request-field">{req.serviceType}</p>
+                            </div>
+                          </div>
+                          <div className="provider-request-row">
+                            <AlertCircle size={15} className="provider-request-icon" />
+                            <div>
+                              <p className="provider-request-field-label">Details</p>
+                              <p className="provider-request-field">{req.details}</p>
+                            </div>
+                          </div>
+                          {scheduledDate && (
+                            <div className="provider-request-row">
+                              <Calendar size={15} className="provider-request-icon" />
+                              <div>
+                                <p className="provider-request-field-label">Scheduled</p>
+                                <p className="provider-request-field">{scheduledDate}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      {scheduledDate && (
-                        <div className="provider-request-row">
-                          <Calendar size={15} className="provider-request-icon" />
-                          <div>
-                            <p className="provider-request-field-label">Scheduled</p>
-                            <p className="provider-request-field">{scheduledDate}</p>
+
+                        <div className="provider-request-footer">
+                          <div className="provider-request-meta">
+                            <span className="provider-request-date">
+                              {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                            </span>
+                          </div>
+                          
+                          <div className="provider-request-actions">
+                            {req.status === 'pending' ? (
+                              <>
+                                <button 
+                                  onClick={() => handleAcceptRequest(req._id)}
+                                  className="provider-action-btn accept"
+                                >
+                                  Accept
+                                </button>
+                                <button 
+                                  onClick={() => setConfirmRejectId(req._id)}
+                                  className="provider-action-btn reject"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            ) : (
+                              <button 
+                                onClick={() => setViewRequestId(req._id)}
+                                className="provider-view-btn"
+                              >
+                                View Details <ChevronRight size={14} />
+                              </button>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </>
+        )}
 
-                    <div className="provider-request-footer">
-                      <div className="provider-request-meta">
-                        <span className="provider-request-date">
-                          {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                        </span>
-                      </div>
-                      
-                      <div className="provider-request-actions">
-                        {req.status === 'pending' ? (
-                          <>
-                            <button 
-                              onClick={() => handleAcceptRequest(req._id)}
-                              className="provider-action-btn accept"
-                            >
-                              Accept
-                            </button>
-                            <button 
-                              onClick={() => setConfirmRejectId(req._id)}
-                              className="provider-action-btn reject"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        ) : (
-                          <button 
-                            onClick={() => setViewRequestId(req._id)}
-                            className="provider-view-btn"
-                          >
-                            View Details <ChevronRight size={14} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+        {activeTab === 'emergencies' && <EmergencyRequests />}
+        
+        {activeTab === 'analytics' && (
+          <div className="provider-empty">
+            <TrendingUp size={56} color="#D1D5DB" />
+            <h3>Analytics coming soon</h3>
+            <p>We are working on bringing you detailed insights into your performance.</p>
+          </div>
+        )}
+
+        {activeTab === 'reviews' && (
+          <div className="provider-empty">
+            <Star size={56} color="#D1D5DB" />
+            <h3>Reviews coming soon</h3>
+            <p>See what your customers are saying about your services.</p>
+          </div>
+        )}
+
+        {activeTab === 'services' && (
+          <div className="provider-empty">
+            <Briefcase size={56} color="#D1D5DB" />
+            <h3>Service Management coming soon</h3>
+            <p>Update your offerings and pricing here.</p>
+          </div>
+        )}
       </main>
 
       {confirmRejectId && (
