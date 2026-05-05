@@ -95,9 +95,14 @@ export default function ProviderDetails({ requestId, onClose, onSuccess }) {
             if (!res.ok) throw new Error(data.message || 'Verification failed');
 
             setOtpSuccess(true);
+            // Optionally update the local request state with the new details from data.request
+            if (data.request) {
+                setRequest(prev => ({ ...prev, ...data.request }));
+            }
+            
             setTimeout(() => {
                 onSuccess();
-            }, 1500);
+            }, 2500);
         } catch (err) {
             setOtpError(err.message);
         } finally {
@@ -142,7 +147,11 @@ export default function ProviderDetails({ requestId, onClose, onSuccess }) {
                             <div className="modal-success">
                                 <ShieldCheck size={52} color="#10B981" />
                                 <h3>Work Completed!</h3>
-                                <p>The service has been marked as completed successfully.</p>
+                                <p>Service for <strong>{request?.customerId?.name || 'the customer'}</strong> has been marked as completed.</p>
+                                <div className="success-details">
+                                    <span>Type: {request?.serviceType}</span>
+                                    <span>Time: {new Date().toLocaleTimeString()}</span>
+                                </div>
                             </div>
                         ) : (
                             <form onSubmit={handleVerifyOtp} className="otp-form">

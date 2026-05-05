@@ -18,7 +18,7 @@ const SERVICE_TYPES = [
   'Painter', 'Carpenter', 'Appliance Repair'
 ];
 
-function ProviderCard({ provider, onBook }) {
+function ProviderCard({ provider, onBook, onViewProfile }) {
   const user = provider.userId;
   const initial = user?.name?.[0]?.toUpperCase() || 'P';
 
@@ -45,31 +45,324 @@ function ProviderCard({ provider, onBook }) {
       <div className="customer-provider-meta">
         <div className="customer-provider-meta-item">
           <Star size={14} color="#F59E0B" />
-          <span>{provider.rating || '—'}</span>
-          <span className="customer-meta-label">{provider.reviews ? `(${provider.reviews})` : ''}</span>
+          <span>{provider.averageRating || '—'}</span>
+          <span className="customer-meta-label">{provider.reviewCount ? `(${provider.reviewCount})` : ''}</span>
         </div>
         {provider.experience && (
           <div className="customer-provider-meta-item">
             <Clock size={14} color="#6366F1" />
-            <span>{provider.experience}</span>
+            <span>{provider.experience} Yrs Exp.</span>
           </div>
         )}
-        {/* {provider.location && (
-          <div className="customer-provider-meta-item">
-            <MapPin size={14} color="#10B981" />
-            <span>{provider.location}</span>
-          </div>
-        )} */}
       </div>
 
       {provider.bio && (
         <p className="customer-provider-bio">{provider.bio}</p>
       )}
 
-      <button onClick={() => onBook(provider)} className="customer-book-btn">
-        <Send size={15} />
-        Send Request
-      </button>
+      <div className="customer-provider-actions">
+        <button onClick={() => onViewProfile(provider._id)} className="customer-view-profile-btn">
+          <User size={15} />
+          Profile
+        </button>
+        <button onClick={() => onBook(provider)} className="customer-book-btn">
+          <Send size={15} />
+          Book
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReviewModal({ requestId, provider, onClose, onSuccess }) {
+  const { accessToken } = useSelector(s => s.auth);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const token = accessToken || localStorage.getItem('accessToken');
+      const res = await fetch(`${API_BASE_URL}/api/review/submit-review`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ requestId, rating, comment })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to submit review');
+      setSuccess(true);
+      setTimeout(() => { onSuccess(); onClose(); }, 1500);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Rate Service</h2>
+            <p className="text-sm text-gray-500 mt-1">How was your experience with {provider?.name || 'the professional'}?</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400 hover:text-gray-600">
+            <X size={20} />
+          </button>
+        </div>
+
+        {success ? (
+          <div className="p-12 flex flex-col items-center text-center animate-in slide-in-from-bottom-4 duration-500">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <CheckCircle2 size={40} className="text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h3>
+            <p className="text-gray-600">Your feedback helps us maintain high quality service.</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm flex items-center gap-2">
+                <AlertCircle size={16} />
+                {error}
+              </div>
+            )}
+
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(num => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setRating(num)}
+                    className="transition-all duration-200 transform hover:scale-110 active:scale-95"
+                  >
+                    <Star 
+                      size={36} 
+                      className={`${num <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-none'}`} 
+                    />
+                  </button>
+                ))}
+              </div>
+              <p className="text-sm font-semibold text-amber-600 bg-amber-50 px-4 py-1 rounded-full">
+                {rating === 5 ? 'Excellent! 🤩' : rating === 4 ? 'Very Good! 😊' : rating === 3 ? 'Good! 🙂' : rating === 2 ? 'Fair 😐' : 'Poor ☹️'}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Write a Review (optional)</label>
+              <textarea
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                placeholder="Share your experience with others…"
+                rows={4}
+                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none text-gray-800 placeholder:text-gray-400"
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <><RefreshCw className="animate-spin" size={18} /> Submitting…</>
+              ) : (
+                'Submit Review'
+              )}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProviderProfileModal({ providerId, onClose, onBook }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      setLoading(true);
+      setReviewsLoading(true);
+      try {
+        // Fetch Provider Basic Info
+        const res = await fetch(`${API_BASE_URL}/api/customer/provider/${providerId}`);
+        if (!res.ok) throw new Error('Failed to fetch provider profile');
+        const json = await res.json();
+        setData(json);
+
+        // Fetch Provider Reviews separately as per backend logic
+        const revRes = await fetch(`${API_BASE_URL}/api/review/provider/${providerId}`);
+        if (revRes.ok) {
+          const revData = await revRes.json();
+          setReviews(revData.reviews || []);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        setReviewsLoading(false);
+      }
+    };
+    if (providerId) fetchProfileData();
+  }, [providerId]);
+
+  if (!providerId) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box profile-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">Provider Profile</h2>
+          <button onClick={onClose} className="modal-close-btn"><X size={20} /></button>
+        </div>
+
+        {loading ? (
+          <div className="modal-loading">
+            <div className="customer-spinner" />
+            <p>Loading profile…</p>
+          </div>
+        ) : error ? (
+          <div className="modal-error">
+            <AlertCircle size={24} />
+            <p>{error}</p>
+          </div>
+        ) : data && (
+          <div className="profile-content">
+            <div className="profile-hero">
+              <div className="profile-avatar">
+                {data.provider.name?.[0]?.toUpperCase() || 'P'}
+              </div>
+              <div className="profile-main-info">
+                <h3>{data.provider.name}</h3>
+                <p className="profile-service-type">{data.provider.serviceType}</p>
+                <div className="profile-badges">
+                  {data.provider.isVerified && (
+                    <span className="customer-verified-badge">
+                      <CheckCircle2 size={12} /> Verified Professional
+                    </span>
+                  )}
+                  <span className="profile-exp-badge">
+                    <Clock size={12} /> {data.provider.experience} Years Experience
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-stats-grid">
+              <div className="profile-stat-item">
+                <Star size={20} color="#F59E0B" fill="#F59E0B" />
+                <div className="profile-stat-details">
+                  <span className="profile-stat-value">{data.provider.averageRating || 'N/A'}</span>
+                  <span className="profile-stat-label">Average Rating</span>
+                </div>
+              </div>
+              <div className="profile-stat-item">
+                <FileText size={20} color="#6366F1" />
+                <div className="profile-stat-details">
+                  <span className="profile-stat-value">{data.provider.reviewCount || 0}</span>
+                  <span className="profile-stat-label">Total Reviews</span>
+                </div>
+              </div>
+              <div className="profile-stat-item">
+                <MapPin size={20} color="#10B981" />
+                <div className="profile-stat-details">
+                  <span className="profile-stat-value">Available</span>
+                  <span className="profile-stat-label">{data.provider.availability || 'Full Time'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-section">
+              <h4 className="section-title">Contact Information</h4>
+              <div className="profile-contact-list">
+                <div className="contact-item">
+                  <Bell size={16} />
+                  <span>{data.provider.email}</span>
+                </div>
+                {data.provider.phone && (
+                  <div className="contact-item">
+                    <CheckCircle2 size={16} />
+                    <span>{data.provider.phone}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="profile-section">
+              <h4 className="section-title">Customer Reviews ({reviews.length})</h4>
+              {reviewsLoading ? (
+                <div className="flex justify-center py-8">
+                  <RefreshCw className="animate-spin text-indigo-600" size={24} />
+                </div>
+              ) : reviews.length === 0 ? (
+                <p className="empty-reviews text-gray-500 text-center py-8 italic bg-gray-50 rounded-xl">No reviews yet for this provider.</p>
+              ) : (
+                <div className="space-y-4 mt-4">
+                  {reviews.map(review => (
+                    <div key={review._id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-indigo-100 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold text-xs">
+                            {review.customerId?.name?.[0]?.toUpperCase() || 'C'}
+                          </div>
+                          <div>
+                            <span className="block font-bold text-gray-900 text-sm">{review.customerId?.name || 'Customer'}</span>
+                            <span className="block text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Verified Client</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              size={12} 
+                              className={`${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-none'}`} 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-gray-600 text-sm leading-relaxed mb-3 pl-11">{review.comment || 'No comment provided.'}</p>
+                      <div className="flex justify-between items-center pl-11 border-t border-gray-100 pt-3">
+                        <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                          <Calendar size={10} />
+                          {new Date(review.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        {review.requestId?.serviceType && (
+                          <span className="text-[10px] bg-white px-2 py-0.5 rounded-full border border-gray-100 text-gray-500 font-medium italic">
+                            Service: {review.requestId.serviceType}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={() => { onClose(); onBook(data.provider); }} 
+              className="profile-book-btn"
+            >
+              <Send size={18} /> Book This Professional
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -210,12 +503,18 @@ export default function CustomerDashboard() {
   const [search, setSearch] = useState('');
   const [selectedService, setSelectedService] = useState('all');
   const [bookingProvider, setBookingProvider] = useState(null);
+  const [viewingProfileId, setViewingProfileId] = useState(null);
+  const [ratingRequest, setRatingRequest] = useState(null);
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem('customerActiveTab') || 'explore';
   });
   const [myRequests, setMyRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState('');
+  
+  const [myReviews, setMyReviews] = useState([]);
+  const [myReviewsLoading, setMyReviewsLoading] = useState(false);
+  const [myReviewsError, setMyReviewsError] = useState('');
 
   // Save active tab to localStorage when it changes
   useEffect(() => {
@@ -259,9 +558,30 @@ export default function CustomerDashboard() {
     }
   };
 
+  const fetchMyReviews = async () => {
+    setMyReviewsLoading(true);
+    setMyReviewsError('');
+    try {
+      const token = accessToken || localStorage.getItem('accessToken');
+      const res = await fetch(`${API_BASE_URL}/api/review/my-reviews`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to fetch reviews');
+      const data = await res.json();
+      setMyReviews(data.reviews || []);
+    } catch (err) {
+      setMyReviewsError(err.message);
+    } finally {
+      setMyReviewsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'explore') fetchProviders();
     if (activeTab === 'requests') fetchMyRequests();
+    if (activeTab === 'reviews') fetchMyReviews();
   }, [accessToken, activeTab]);
 
   const filtered = providers.filter(p => {
@@ -311,7 +631,10 @@ export default function CustomerDashboard() {
           >
             <AlertTriangle size={18} /> Emergency
           </button>
-          <button className="customer-nav-item">
+          <button 
+            className={`customer-nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
+            onClick={() => setActiveTab('reviews')}
+          >
             <Star size={18} /> Reviews
           </button>
         </nav>
@@ -338,13 +661,15 @@ export default function CustomerDashboard() {
         <header className="customer-topbar">
           <div>
             <h1 className="customer-page-title">
-              {activeTab === 'explore' ? 'Find Professionals' : activeTab === 'emergency' ? 'Emergency Service' : 'My Service Requests'}
+              {activeTab === 'explore' ? 'Find Professionals' : activeTab === 'emergency' ? 'Emergency Service' : activeTab === 'reviews' ? 'My Reviews' : 'My Service Requests'}
             </h1>
             <p className="customer-page-sub">
               {activeTab === 'explore'
                 ? `${filtered.length} verified provider${filtered.length !== 1 ? 's' : ''} available`
                 : activeTab === 'emergency'
                 ? 'Request urgent help from nearby providers'
+                : activeTab === 'reviews'
+                ? `You have shared ${myReviews.length} review${myReviews.length !== 1 ? 's' : ''}`
                 : `${myRequests.length} request${myRequests.length !== 1 ? 's' : ''} total`
               }
             </p>
@@ -423,12 +748,91 @@ export default function CustomerDashboard() {
                       key={provider._id}
                       provider={provider}
                       onBook={setBookingProvider}
+                      onViewProfile={setViewingProfileId}
                     />
                   ))}
                 </div>
               )}
             </section>
           </>
+        ) : activeTab === 'reviews' ? (
+          <section className="p-6">
+            {myReviewsLoading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <RefreshCw className="animate-spin text-indigo-600 mb-4" size={40} />
+                <p className="text-gray-500 font-medium">Loading your reviews…</p>
+              </div>
+            ) : myReviewsError ? (
+              <div className="bg-red-50 border border-red-100 rounded-2xl p-8 text-center">
+                <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
+                <p className="text-red-800 font-semibold mb-4">{myReviewsError}</p>
+                <button onClick={fetchMyReviews} className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors">
+                  Try Again
+                </button>
+              </div>
+            ) : myReviews.length === 0 ? (
+              <div className="bg-white border border-dashed border-gray-200 rounded-3xl p-20 text-center shadow-sm">
+                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Star size={40} className="text-gray-300" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">No reviews shared yet</h3>
+                <p className="text-gray-500 mb-8 max-w-sm mx-auto">
+                  Your feedback helps providers improve and helps other customers make better choices.
+                </p>
+                <button onClick={() => setActiveTab('requests')} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
+                  Go to Completed Requests
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {myReviews.map(review => (
+                  <div key={review._id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all group">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-inner group-hover:rotate-3 transition-transform">
+                          {review.providerId?.name?.[0]?.toUpperCase() || 'P'}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{review.providerId?.name || 'Provider'}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                              {review.requestId?.serviceType || 'Service'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-0.5 bg-amber-50 p-1.5 rounded-xl">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            size={14} 
+                            className={`${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-none'}`} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-50/50 rounded-2xl p-4 mb-4 min-h-[80px]">
+                      <p className="text-gray-600 text-sm italic leading-relaxed">
+                        "{review.comment || 'You didn\'t leave a written comment for this service.'}"
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-50 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={12} />
+                        {new Date(review.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-indigo-500">
+                        <CheckCircle2 size={12} />
+                        Verified Review
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         ) : (
           /* My Requests Tab Content */
           <section className="customer-requests-section">
@@ -508,9 +912,19 @@ export default function CustomerDashboard() {
                           <p><span>Email:</span> {req.providerId.email}</p>
                         )}
                       </div>
-                      <button className="customer-view-details-btn">
-                        View Details <ChevronRight size={14} />
-                      </button>
+                      <div className="customer-req-actions-alt">
+                        {!req.hasBeenReviewed && req.status === 'completed' && (
+                          <button 
+                            onClick={() => setRatingRequest(req)}
+                            className="customer-rate-btn"
+                          >
+                            <Star size={14} /> Rate Service
+                          </button>
+                        )}
+                        <button className="customer-view-details-btn">
+                          View Details <ChevronRight size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -524,6 +938,26 @@ export default function CustomerDashboard() {
         <RequestModal
           provider={bookingProvider}
           onClose={() => setBookingProvider(null)}
+          onSuccess={() => {
+            fetchMyRequests();
+            fetchProviders();
+          }}
+        />
+      )}
+
+      {viewingProfileId && (
+        <ProviderProfileModal
+          providerId={viewingProfileId}
+          onClose={() => setViewingProfileId(null)}
+          onBook={setBookingProvider}
+        />
+      )}
+
+      {ratingRequest && (
+        <ReviewModal
+          requestId={ratingRequest._id}
+          provider={ratingRequest.providerId}
+          onClose={() => setRatingRequest(null)}
           onSuccess={() => {
             fetchMyRequests();
             fetchProviders();
