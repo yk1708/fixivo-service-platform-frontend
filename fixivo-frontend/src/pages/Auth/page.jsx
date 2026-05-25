@@ -583,6 +583,7 @@ useEffect(() => {
                 <span className="text-gray-400 text-xs">or continue with</span>
                 <div className="flex-1 h-px bg-gray-200"></div>
               </div>
+              
 
               {/* Toggle Email/Phone */}
               <div className="flex bg-gray-100 rounded-xl p-0.5 mb-5 w-fit">
