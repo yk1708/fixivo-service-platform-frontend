@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - run: docker build . -t yk1708/fixivo-webapplication
+      - run: docker build -t yk1708/fixivo-webapplication fixivo-frontend
       - run: echo "${{secrets.DOCKER_HUB_PASSWORD}}" | docker login -u ${{secrets.DOCKER_HUB_USERNAME}} --password-stdin
       - run: docker push yk1708/fixivo-webapplication:latest
  
