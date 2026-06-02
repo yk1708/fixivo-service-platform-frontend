@@ -57,7 +57,7 @@
                 </div> */}
                 </div>
 
-                <Link to="/become-partner" className="nav-link">
+                <Link className="nav-link">
                 For Professionals
                 </Link>
             </div>
