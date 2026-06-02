@@ -87,11 +87,14 @@
 
             {/* Mobile Menu */}
             {isMenuOpen && (
-            <div className="md:hidden py-4 border-t">
-                <div className="flex flex-col gap-2">
-                <Link to="/" onClick={() => setIsMenuOpen(false)}>Home</Link>
-                <Link to="/services/all" onClick={() => setIsMenuOpen(false)}>Services</Link>
-                {/* <Link to="/become-partner" onClick={() => setIsMenuOpen(false)}>For Professionals</Link> */}
+            <div className="md:hidden py-4 border-t border-gray-100">
+                <div className="flex flex-col gap-3">
+                <Link to="/" className="nav-link px-2 py-1.5 rounded-lg hover:bg-slate-50" onClick={() => setIsMenuOpen(false)}>Home</Link>
+                <Link to="/services/all" className="nav-link px-2 py-1.5 rounded-lg hover:bg-slate-50" onClick={() => setIsMenuOpen(false)}>Services</Link>
+                <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+                    <Link to="/login" className="btn-outline text-center w-full" onClick={() => setIsMenuOpen(false)}>Login</Link>
+                    <Link to="/signup" className="btn-primary text-center w-full" onClick={() => setIsMenuOpen(false)}>Sign Up</Link>
+                </div>
                 </div>
             </div>
             )}

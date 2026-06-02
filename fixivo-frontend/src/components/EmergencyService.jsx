@@ -287,10 +287,10 @@ export default function EmergencyService() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-50">
-                <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Date</th>
+                <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Date</th>
                 <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Service</th>
                 <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Provider</th>
+                <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:table-cell">Provider</th>
                 <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
@@ -311,7 +311,7 @@ export default function EmergencyService() {
               ) : (
                 emergencies.map((req) => (
                   <tr key={req._id || req.id} className="group hover:bg-slate-50 transition-colors">
-                    <td className="py-4 text-sm text-slate-600">
+                    <td className="py-4 text-sm text-slate-600 hidden sm:table-cell">
                       {new Date(req.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-4 text-sm font-semibold text-slate-800">
@@ -326,7 +326,7 @@ export default function EmergencyService() {
                         {req.status}
                       </span>
                     </td>
-                    <td className="py-4 text-sm text-slate-600">
+                    <td className="py-4 text-sm text-slate-600 hidden md:table-cell">
                       {(req.providerId?.name || req.assignedProviderId?.name) || (
                         <span className="text-slate-400 text-xs italic">Searching...</span>
                       )}

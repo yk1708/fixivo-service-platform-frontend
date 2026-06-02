@@ -513,7 +513,9 @@ export default function CustomerDashboard() {
   const [myReviewsLoading, setMyReviewsLoading] = useState(false);
   const [myReviewsError, setMyReviewsError] = useState('');
 
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState(() => {
+    return window.innerWidth < 768 ? 'card' : 'table';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile sidebar toggle
 
   useEffect(() => {
