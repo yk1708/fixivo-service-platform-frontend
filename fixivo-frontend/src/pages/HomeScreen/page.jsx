@@ -402,7 +402,7 @@ export function HomePage() {
                 ))}
               </div>
               <button
-                onClick={() => navigate('/become-partner')}
+                onClick={() => navigate('/login', { state: { role: 'provider' } })}
                 className="inline-flex items-center gap-2 bg-[#F97316] text-white px-8 py-4 rounded-2xl hover:bg-orange-600 transition-colors shadow-lg"
                 style={{ fontWeight: 700 }}
               >

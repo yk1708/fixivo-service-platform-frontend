@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, X, CheckCircle2, Star, MapPin, Briefcase, Clock,
   Send, LogOut, Bell, User, Wrench, ChevronRight, AlertCircle,
-  RefreshCw, Calendar, FileText, Info, ShieldAlert, Key, AlertTriangle
+  RefreshCw, Calendar, FileText, Info, ShieldAlert, Key, AlertTriangle, LayoutGrid, List, Menu
 } from 'lucide-react';
 import { logout } from '../../app/slices/authSlice';
 import NotificationBell from '../../components/NotificationBell';
@@ -72,6 +72,90 @@ function ProviderCard({ provider, onBook, onViewProfile }) {
   );
 }
 
+function ProviderTable({ providers, onBook, onViewProfile }) {
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-slate-50 border-b border-slate-200">
+            <th className="text-left px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Provider</th>
+            <th className="text-left px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Service</th>
+            <th className="text-left px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Rating</th>
+            <th className="text-left px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Experience</th>
+            <th className="text-left px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
+            <th className="text-left px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider hidden lg:table-cell">Bio</th>
+            <th className="text-right px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {providers.map((provider) => {
+            const user = provider.userId;
+            const initial = user?.name?.[0]?.toUpperCase() || 'P';
+            return (
+              <tr key={provider._id} className="hover:bg-blue-50/40 transition-colors group">
+                <td className="px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-blue-700 text-white font-bold text-base flex items-center justify-center shrink-0">
+                      {initial}
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 text-[14px]">{user?.name || 'Provider'}</p>
+                      {provider.isVerified && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                          <CheckCircle2 size={10} /> Verified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-5 py-4">
+                  <span className="text-slate-600 font-medium">{provider.serviceType || '—'}</span>
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex items-center gap-1">
+                    <Star size={13} color="#F59E0B" fill="#F59E0B" />
+                    <span className="font-semibold text-slate-700">{provider.averageRating || '—'}</span>
+                    {provider.reviewCount > 0 && (
+                      <span className="text-slate-400 text-xs hidden sm:inline">({provider.reviewCount})</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-5 py-4 hidden md:table-cell">
+                  <span className="text-slate-600">{provider.experience ? `${provider.experience} yrs` : '—'}</span>
+                </td>
+                <td className="px-5 py-4 hidden sm:table-cell">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide ${provider.isVerified ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                    {provider.isVerified ? 'Active' : 'Unverified'}
+                  </span>
+                </td>
+                <td className="px-5 py-4 max-w-[200px] hidden lg:table-cell">
+                  <p className="text-slate-500 text-xs line-clamp-2">{provider.bio || '—'}</p>
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => onViewProfile(provider._id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[12px] font-semibold hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      <User size={13} /> <span className="hidden sm:inline">Profile</span>
+                    </button>
+                    <button
+                      onClick={() => onBook(provider)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 text-white rounded-lg text-[12px] font-semibold hover:bg-blue-900 transition-all"
+                    >
+                      <Send size={13} /> <span className="hidden sm:inline">Book</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function ReviewModal({ requestId, provider, onClose, onSuccess }) {
   const { accessToken } = useSelector(s => s.auth);
   const [rating, setRating] = useState(5);
@@ -108,10 +192,10 @@ function ReviewModal({ requestId, provider, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div className="p-5 sm:p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Rate Service</h2>
-            <p className="text-sm text-gray-500 mt-1">How was your experience with {provider?.name || 'the professional'}?</p>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Rate Service</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">How was your experience with {provider?.name || 'the professional'}?</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400 hover:text-gray-600">
             <X size={20} />
@@ -119,7 +203,7 @@ function ReviewModal({ requestId, provider, onClose, onSuccess }) {
         </div>
 
         {success ? (
-          <div className="p-12 flex flex-col items-center text-center animate-in slide-in-from-bottom-4 duration-500">
+          <div className="p-10 sm:p-12 flex flex-col items-center text-center animate-in slide-in-from-bottom-4 duration-500">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
               <CheckCircle2 size={40} className="text-green-600" />
             </div>
@@ -127,7 +211,7 @@ function ReviewModal({ requestId, provider, onClose, onSuccess }) {
             <p className="text-gray-600">Your feedback helps us maintain high quality service.</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5 sm:space-y-6">
             {error && (
               <div className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm flex items-center gap-2">
                 <AlertCircle size={16} />
@@ -144,9 +228,9 @@ function ReviewModal({ requestId, provider, onClose, onSuccess }) {
                     onClick={() => setRating(num)}
                     className="transition-all duration-200 transform hover:scale-110 active:scale-95"
                   >
-                    <Star 
-                      size={36} 
-                      className={`${num <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-none'}`} 
+                    <Star
+                      size={34}
+                      className={`${num <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-none'}`}
                     />
                   </button>
                 ))}
@@ -167,9 +251,9 @@ function ReviewModal({ requestId, provider, onClose, onSuccess }) {
               />
             </div>
 
-            <button 
-              type="submit" 
-              disabled={loading} 
+            <button
+              type="submit"
+              disabled={loading}
               className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -198,13 +282,11 @@ function ProviderProfileModal({ providerId, onClose, onBook }) {
       setLoading(true);
       setReviewsLoading(true);
       try {
-        // Fetch Provider Basic Info
         const res = await fetch(`${API_BASE_URL}/api/customer/provider/${providerId}`);
         if (!res.ok) throw new Error('Failed to fetch provider profile');
         const json = await res.json();
         setData(json);
 
-        // Fetch Provider Reviews separately as per backend logic
         const revRes = await fetch(`${API_BASE_URL}/api/review/provider/${providerId}`);
         if (revRes.ok) {
           const revData = await revRes.json();
@@ -223,8 +305,8 @@ function ProviderProfileModal({ providerId, onClose, onBook }) {
   if (!providerId) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-[4px] z-[200] flex items-center justify-center p-6" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-[600px] max-h-[85vh] overflow-y-auto p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-[4px] z-[200] flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
+      <div className="bg-white rounded-3xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto p-5 sm:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-6">
           <h2 className="text-xl font-extrabold text-slate-900">Provider Profile</h2>
           <button onClick={onClose} className="w-9 h-9 rounded-[10px] bg-slate-100 border-none text-slate-500 flex items-center justify-center cursor-pointer shrink-0 hover:bg-red-100 hover:text-red-500"><X size={20} /></button>
@@ -240,21 +322,21 @@ function ProviderProfileModal({ providerId, onClose, onBook }) {
           </div>
         ) : data && (
           <div>
-            <div className="flex items-center gap-5 mb-6 pb-6 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 mb-6 pb-6 border-b border-slate-100">
               <div className="w-20 h-20 rounded-[20px] bg-gradient-to-br from-blue-700 to-blue-500 text-white text-[32px] font-extrabold flex items-center justify-center shrink-0">{data.provider.name?.[0]?.toUpperCase() || 'P'}</div>
-              <div>
+              <div className="text-center sm:text-left">
                 <h3 className="text-[22px] font-extrabold text-slate-900 mb-1">{data.provider.name}</h3>
                 <p className="text-[15px] text-slate-500 font-medium mb-3">{data.provider.serviceType}</p>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap justify-center sm:justify-start">
                   {data.provider.isVerified && (<span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full"><CheckCircle2 size={12} /> Verified Professional</span>)}
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full"><Clock size={12} /> {data.provider.experience} Years Experience</span>
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4 mb-7">
-              <div className="bg-slate-50 p-4 rounded-2xl flex flex-col items-center text-center gap-2"><Star size={20} color="#F59E0B" fill="#F59E0B" /><span className="text-lg font-extrabold text-slate-900">{data.provider.averageRating || 'N/A'}</span><span className="text-[11px] text-slate-400 font-semibold uppercase">Average Rating</span></div>
-              <div className="bg-slate-50 p-4 rounded-2xl flex flex-col items-center text-center gap-2"><FileText size={20} color="#6366F1" /><span className="text-lg font-extrabold text-slate-900">{data.provider.reviewCount || 0}</span><span className="text-[11px] text-slate-400 font-semibold uppercase">Total Reviews</span></div>
-              <div className="bg-slate-50 p-4 rounded-2xl flex flex-col items-center text-center gap-2"><MapPin size={20} color="#10B981" /><span className="text-lg font-extrabold text-slate-900">Available</span><span className="text-[11px] text-slate-400 font-semibold uppercase">{data.provider.availability || 'Full Time'}</span></div>
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-7">
+              <div className="bg-slate-50 p-3 sm:p-4 rounded-2xl flex flex-col items-center text-center gap-2"><Star size={20} color="#F59E0B" fill="#F59E0B" /><span className="text-base sm:text-lg font-extrabold text-slate-900">{data.provider.averageRating || 'N/A'}</span><span className="text-[10px] sm:text-[11px] text-slate-400 font-semibold uppercase">Avg Rating</span></div>
+              <div className="bg-slate-50 p-3 sm:p-4 rounded-2xl flex flex-col items-center text-center gap-2"><FileText size={20} color="#6366F1" /><span className="text-base sm:text-lg font-extrabold text-slate-900">{data.provider.reviewCount || 0}</span><span className="text-[10px] sm:text-[11px] text-slate-400 font-semibold uppercase">Reviews</span></div>
+              <div className="bg-slate-50 p-3 sm:p-4 rounded-2xl flex flex-col items-center text-center gap-2"><MapPin size={20} color="#10B981" /><span className="text-base sm:text-lg font-extrabold text-slate-900">Active</span><span className="text-[10px] sm:text-[11px] text-slate-400 font-semibold uppercase">{data.provider.availability || 'Full Time'}</span></div>
             </div>
             <div className="mb-7">
               <h4 className="text-sm font-bold text-slate-700 uppercase tracking-[0.05em] mb-4 flex items-center gap-2">Contact Information</h4>
@@ -277,12 +359,12 @@ function ProviderProfileModal({ providerId, onClose, onBook }) {
                           <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold text-xs">{review.customerId?.name?.[0]?.toUpperCase() || 'C'}</div>
                           <div><span className="block font-bold text-gray-900 text-sm">{review.customerId?.name || 'Customer'}</span><span className="block text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Verified Client</span></div>
                         </div>
-                        <div className="flex gap-0.5">{[...Array(5)].map((_,i)=>(<Star key={i} size={12} className={i<review.rating?'text-amber-400 fill-amber-400':'text-gray-200 fill-none'} />))}</div>
+                        <div className="flex gap-0.5">{[...Array(5)].map((_, i) => (<Star key={i} size={12} className={i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-none'} />))}</div>
                       </div>
                       <p className="text-gray-600 text-sm leading-relaxed mb-3 pl-11">{review.comment || 'No comment provided.'}</p>
                       <div className="flex justify-between items-center pl-11 border-t border-gray-100 pt-3">
-                        <span className="text-[10px] text-gray-400 flex items-center gap-1"><Calendar size={10} />{new Date(review.createdAt).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}</span>
-                        {review.requestId?.serviceType&&(<span className="text-[10px] bg-white px-2 py-0.5 rounded-full border border-gray-100 text-gray-500 font-medium italic">Service: {review.requestId.serviceType}</span>)}
+                        <span className="text-[10px] text-gray-400 flex items-center gap-1"><Calendar size={10} />{new Date(review.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        {review.requestId?.serviceType && (<span className="text-[10px] bg-white px-2 py-0.5 rounded-full border border-gray-100 text-gray-500 font-medium italic">Service: {review.requestId.serviceType}</span>)}
                       </div>
                     </div>
                   ))}
@@ -344,8 +426,8 @@ function RequestModal({ provider, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-[4px] z-[200] flex items-center justify-center p-6" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-[480px] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-[4px] z-[200] flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
+      <div className="bg-white rounded-3xl w-full max-w-[480px] p-5 sm:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <h2 className="text-xl font-extrabold text-slate-900">Send Service Request</h2>
@@ -426,12 +508,14 @@ export default function CustomerDashboard() {
   const [myRequests, setMyRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState('');
-  
+
   const [myReviews, setMyReviews] = useState([]);
   const [myReviewsLoading, setMyReviewsLoading] = useState(false);
   const [myReviewsError, setMyReviewsError] = useState('');
 
-  // Save active tab to localStorage when it changes
+  const [viewMode, setViewMode] = useState("table");
+  const [sidebarOpen, setSidebarOpen] = useState(false); // mobile sidebar toggle
+
   useEffect(() => {
     localStorage.setItem('customerActiveTab', activeTab);
   }, [activeTab]);
@@ -457,15 +541,11 @@ export default function CustomerDashboard() {
     try {
       const token = accessToken || localStorage.getItem('accessToken');
       const res = await fetch(`${API_BASE_URL}/api/request/customer-requests-status`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to fetch requests');
       const data = await res.json();
-      console.log("customer dashboard requests data",data);
       setMyRequests(data.requests || []);
-      
     } catch (err) {
       setRequestsError(err.message);
     } finally {
@@ -479,9 +559,7 @@ export default function CustomerDashboard() {
     try {
       const token = accessToken || localStorage.getItem('accessToken');
       const res = await fetch(`${API_BASE_URL}/api/review/my-reviews`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to fetch reviews');
       const data = await res.json();
@@ -515,10 +593,43 @@ export default function CustomerDashboard() {
     navigate('/login');
   };
 
+  const navItems = [
+    { tab: 'explore',   icon: <User size={18} />,         label: 'Find Providers' },
+    { tab: 'requests',  icon: <FileText size={18} />,      label: 'My Requests' },
+    { tab: 'emergency', icon: <AlertTriangle size={18} />, label: 'Emergency' },
+    { tab: 'reviews',   icon: <Star size={18} />,          label: 'Reviews' },
+  ];
+
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans">
-      {/* Sidebar */}
-      <aside className="w-[250px] bg-gradient-to-b from-[#0C1445] to-[#1E40AF] flex flex-col fixed inset-y-0 left-0 z-40 py-6">
+
+      {/* ── Mobile overlay backdrop ── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* ── Sidebar ── */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-40 flex flex-col py-6
+          bg-gradient-to-b from-[#0C1445] to-[#1E40AF]
+          transition-transform duration-300 ease-in-out
+          w-[250px]
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+        `}
+      >
+        {/* Close button — mobile only */}
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="lg:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg text-white"
+        >
+          <X size={18} />
+        </button>
+
         <div className="flex items-center gap-2.5 px-6 mb-9">
           <div className="w-9 h-9 bg-white/20 rounded-[10px] flex items-center justify-center">
             <Wrench size={20} color="#fff" />
@@ -528,13 +639,8 @@ export default function CustomerDashboard() {
 
         <nav className="flex-1 px-3 overflow-y-auto">
           <p className="text-[10px] font-bold text-white/40 tracking-[0.12em] uppercase px-3 mb-2">Main Menu</p>
-          {[
-            { tab: 'explore',   icon: <User size={18} />,          label: 'Find Providers' },
-            { tab: 'requests',  icon: <FileText size={18} />,       label: 'My Requests' },
-            { tab: 'emergency', icon: <AlertTriangle size={18} />,  label: 'Emergency' },
-            { tab: 'reviews',   icon: <Star size={18} />,           label: 'Reviews' },
-          ].map(({ tab, icon, label }) => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
+          {navItems.map(({ tab, icon, label }) => (
+            <button key={tab} onClick={() => { setActiveTab(tab); setSidebarOpen(false); }}
               className={`flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl text-sm mb-0.5 transition-all text-left border-none cursor-pointer
                 ${activeTab === tab ? 'bg-white/[0.18] text-white font-semibold' : 'bg-transparent text-white/65 hover:bg-white/10 hover:text-white font-medium'}`}>
               {icon} {label}
@@ -559,30 +665,58 @@ export default function CustomerDashboard() {
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="ml-[250px] flex-1 p-8 overflow-y-auto">
-        {/* Topbar */}
-        <header className="flex items-start justify-between mb-6 flex-wrap gap-3">
-          <div>
-            <h1 className="text-[26px] font-extrabold text-slate-900 leading-tight">
-              {activeTab === 'explore' ? 'Find Professionals' : activeTab === 'emergency' ? 'Emergency Service' : activeTab === 'reviews' ? 'My Reviews' : 'My Service Requests'}
-            </h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              {activeTab === 'explore'
-                ? `${filtered.length} verified provider${filtered.length !== 1 ? 's' : ''} available`
-                : activeTab === 'emergency'
-                ? 'Request urgent help from nearby providers'
-                : activeTab === 'reviews'
-                ? `You have shared ${myReviews.length} review${myReviews.length !== 1 ? 's' : ''}`
-                : `${myRequests.length} request${myRequests.length !== 1 ? 's' : ''} total`
-              }
-            </p>
+      {/* ── Main ── */}
+      <main className="flex-1 lg:ml-[250px] p-4 sm:p-6 lg:p-8 overflow-y-auto">
+
+        {/* ── Topbar ── */}
+        <header className="flex items-start justify-between mb-5 sm:mb-6 flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            {/* Hamburger — mobile/tablet only */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 text-slate-600"
+            >
+              <Menu size={20} />
+            </button>
+            <div>
+              <h1 className="text-xl sm:text-[26px] font-extrabold text-slate-900 leading-tight">
+                {activeTab === 'explore' ? 'Find Professionals' : activeTab === 'emergency' ? 'Emergency Service' : activeTab === 'reviews' ? 'My Reviews' : 'My Service Requests'}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                {activeTab === 'explore'
+                  ? `${filtered.length} verified provider${filtered.length !== 1 ? 's' : ''} available`
+                  : activeTab === 'emergency'
+                  ? 'Request urgent help from nearby providers'
+                  : activeTab === 'reviews'
+                  ? `You have shared ${myReviews.length} review${myReviews.length !== 1 ? 's' : ''}`
+                  : `${myRequests.length} request${myRequests.length !== 1 ? 's' : ''} total`
+                }
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <NotificationBell />
+            {activeTab === 'explore' && (
+              <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  title="Table view"
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 rounded-lg text-[13px] font-semibold transition-all ${viewMode === 'table' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <List size={16} /> <span className="hidden sm:inline">Table</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('card')}
+                  title="Card view"
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 rounded-lg text-[13px] font-semibold transition-all ${viewMode === 'card' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <LayoutGrid size={16} /> <span className="hidden sm:inline">Cards</span>
+                </button>
+              </div>
+            )}
             <button onClick={activeTab === 'explore' ? fetchProviders : fetchMyRequests}
-              className="flex items-center gap-1.5 px-[18px] py-2.5 bg-blue-700 text-white border-none rounded-xl text-[13px] font-semibold cursor-pointer transition-colors hover:bg-blue-900">
-              <RefreshCw size={16} />Refresh
+              className="flex items-center gap-1.5 px-3 sm:px-[18px] py-2.5 bg-blue-700 text-white border-none rounded-xl text-[13px] font-semibold cursor-pointer transition-colors hover:bg-blue-900">
+              <RefreshCw size={16} /><span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
         </header>
@@ -593,7 +727,7 @@ export default function CustomerDashboard() {
           <>
             {/* Search & Filter */}
             <div className="mb-4">
-              <div className="flex items-center gap-2.5 bg-white border-[1.5px] border-slate-200 rounded-2xl px-4 py-3 transition-all max-w-[500px] focus-within:border-blue-700 focus-within:shadow-[0_0_0_3px_rgba(30,64,175,0.08)]">
+              <div className="flex items-center gap-2.5 bg-white border-[1.5px] border-slate-200 rounded-2xl px-4 py-3 transition-all w-full sm:max-w-[500px] focus-within:border-blue-700 focus-within:shadow-[0_0_0_3px_rgba(30,64,175,0.08)]">
                 <Search size={18} className="text-slate-400 shrink-0" />
                 <input type="text" placeholder="Search by name or service…" value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -606,18 +740,18 @@ export default function CustomerDashboard() {
               </div>
             </div>
 
-            {/* Service Filter Pills */}
-            <div className="flex gap-2 flex-wrap mb-6">
+            {/* Service Filter Pills — scrollable on mobile */}
+            <div className="flex gap-2 mb-5 sm:mb-6 overflow-x-auto pb-1 scrollbar-none">
               {serviceTypes.map(s => (
                 <button key={s} onClick={() => setSelectedService(s)}
-                  className={`py-[7px] px-4 rounded-full text-[13px] font-medium cursor-pointer transition-all whitespace-nowrap border
+                  className={`py-[7px] px-4 rounded-full text-[13px] font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 border
                     ${selectedService === s ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-700 hover:text-blue-700'}`}>
                   {s === 'all' ? '✨ All Services' : s}
                 </button>
               ))}
             </div>
 
-            {/* Providers Grid */}
+            {/* Providers Grid / Table */}
             <section>
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400 text-center">
@@ -635,8 +769,10 @@ export default function CustomerDashboard() {
                   <h3 className="text-lg font-bold text-slate-500">No providers found</h3>
                   <p className="text-sm">Try adjusting your search or filter.</p>
                 </div>
+              ) : viewMode === 'table' ? (
+                <ProviderTable providers={filtered} onBook={setBookingProvider} onViewProfile={setViewingProfileId} />
               ) : (
-                <div className="grid gap-[18px]" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))' }}>
+                <div className="grid gap-4 sm:gap-[18px] grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                   {filtered.map(provider => (
                     <ProviderCard key={provider._id} provider={provider} onBook={setBookingProvider} onViewProfile={setViewingProfileId} />
                   ))}
@@ -645,7 +781,7 @@ export default function CustomerDashboard() {
             </section>
           </>
         ) : activeTab === 'reviews' ? (
-          <section className="p-6">
+          <section className="p-0 sm:p-6">
             {myReviewsLoading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <RefreshCw className="animate-spin text-indigo-600 mb-4" size={40} />
@@ -658,16 +794,16 @@ export default function CustomerDashboard() {
                 <button onClick={fetchMyReviews} className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors">Try Again</button>
               </div>
             ) : myReviews.length === 0 ? (
-              <div className="bg-white border border-dashed border-gray-200 rounded-3xl p-20 text-center shadow-sm">
+              <div className="bg-white border border-dashed border-gray-200 rounded-3xl p-12 sm:p-20 text-center shadow-sm">
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6"><Star size={40} className="text-gray-300" /></div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">No reviews shared yet</h3>
                 <p className="text-gray-500 mb-8 max-w-sm mx-auto">Your feedback helps providers improve and helps other customers make better choices.</p>
                 <button onClick={() => setActiveTab('requests')} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">Go to Completed Requests</button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {myReviews.map(review => (
-                  <div key={review._id} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all group">
+                  <div key={review._id} className="bg-white rounded-3xl border border-gray-100 p-5 sm:p-6 shadow-sm hover:shadow-md transition-all group">
                     <div className="flex justify-between items-start mb-6">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-inner group-hover:rotate-3 transition-transform">
@@ -717,7 +853,7 @@ export default function CustomerDashboard() {
                 <button onClick={() => setActiveTab('explore')} className="mt-2 px-6 py-2.5 bg-blue-700 text-white border-none rounded-[10px] font-semibold cursor-pointer">Explore Providers</button>
               </div>
             ) : (
-              <div className="flex flex-col gap-4 max-w-[900px]">
+              <div className="flex flex-col gap-4 w-full max-w-[900px]">
                 {myRequests.map(req => {
                   const statusColors = {
                     pending:   'bg-amber-100 text-amber-800',
@@ -726,8 +862,8 @@ export default function CustomerDashboard() {
                     cancelled: 'bg-red-100 text-red-800',
                   };
                   return (
-                    <div key={req._id} className="bg-white rounded-2xl border border-slate-200 p-5 transition-all shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-blue-700 hover:shadow-[0_8px_16px_rgba(0,0,0,0.06)]">
-                      <div className="flex items-center justify-between mb-4 gap-3">
+                    <div key={req._id} className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 transition-all shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-blue-700 hover:shadow-[0_8px_16px_rgba(0,0,0,0.06)]">
+                      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                         <div className="flex items-center gap-3">
                           <div className="w-11 h-11 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center font-bold text-lg shrink-0">
                             {req.providerId?.name?.[0]?.toUpperCase() || 'P'}
@@ -742,7 +878,7 @@ export default function CustomerDashboard() {
                         </span>
                       </div>
 
-                      <div className="flex flex-col gap-2.5 p-4 bg-slate-50 rounded-xl mb-4 border border-slate-100">
+                      <div className="flex flex-col gap-2.5 p-3 sm:p-4 bg-slate-50 rounded-xl mb-4 border border-slate-100">
                         <div className="flex items-start gap-2.5 text-slate-600 text-[13px]">
                           <Info size={14} className="text-slate-400 mt-0.5 shrink-0" /><p>{req.requestDetails?.details}</p>
                         </div>
@@ -768,12 +904,12 @@ export default function CustomerDashboard() {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="text-xs text-slate-500">
                           {req.providerId?.phone && (<p className="mb-0.5"><span className="font-semibold text-slate-600">Phone:</span> {req.providerId.phone}</p>)}
                           {req.providerId?.email && (<p><span className="font-semibold text-slate-600">Email:</span> {req.providerId.email}</p>)}
                         </div>
-                        <div className="flex gap-2.5 items-center">
+                        <div className="flex gap-2.5 items-center flex-wrap">
                           {!req.hasBeenReviewed && req.status === 'completed' && (
                             <button onClick={() => setRatingRequest(req)}
                               className="flex items-center gap-1.5 px-4 py-2 bg-orange-50 border border-orange-100 text-orange-600 rounded-[10px] text-[13px] font-semibold cursor-pointer transition-all hover:bg-amber-500 hover:border-amber-500 hover:text-white hover:shadow-[0_4px_12px_rgba(245,158,11,0.2)]">
