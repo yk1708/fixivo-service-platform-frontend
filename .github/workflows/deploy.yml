@@ -8,19 +8,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: fixivo-frontend
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Login to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-
-      - name: Build Image
-        run: docker build -t yk1708/fixivo-webapplication:latest .
-
-      - name: Push Image
-        run: docker push yk1708/fixivo-webapplication:latest
+      - run: docker build . -t yk1708/fixivo-webapplication
+      - run: echo "${{secrets.DOCKER_HUB_PASSWORD}}" | docker login -u ${{secrets.DOCKER_HUB_USERNAME}} --password-stdin
+      - run: docker push yk1708/fixivo-webapplication:latest
+ 
