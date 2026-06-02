@@ -96,7 +96,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute top-[calc(100%+8px)] left-0 w-[340px] bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-slate-100 z-[100] overflow-hidden">
+        <div className="absolute top-[calc(100%+8px)] right-0 w-[340px] bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-slate-100 z-[100] overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <h3 className="font-bold text-[0.95rem] text-slate-900">Notifications</h3>
             <button onClick={() => setOpen(false)} className="bg-transparent border-none text-slate-400 cursor-pointer p-1 hover:text-slate-700">
