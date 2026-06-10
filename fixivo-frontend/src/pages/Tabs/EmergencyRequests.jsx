@@ -131,14 +131,14 @@ export default function EmergencyRequests() {
           </button>
         </div>
 
-        <button
+        {/* <button
           onClick={fetchEmergencies}
           className="provider-refresh-btn !rounded-xl"
           disabled={loading}
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           Refresh
-        </button>
+        </button> */}
       </div>
 
       {loading && currentData.length === 0 ? (
