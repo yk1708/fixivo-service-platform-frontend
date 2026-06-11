@@ -10,6 +10,7 @@ import {
 import { logout } from '../../app/slices/authSlice';
 import NotificationBell from '../../components/NotificationBell';
 import EmergencyRequests from '../Tabs/EmergencyRequests';
+import ProviderAnalytics from '../Tabs/ProviderAnalytics';
 
 const API_BASE_URL = import.meta.env.VITE_FIXIVO_APP_API_URL || 'https://fixivo-service-platform-backend.onrender.com';
 
@@ -362,13 +363,7 @@ export default function ProviderDashboard() {
 
         {activeTab === 'emergencies' && <EmergencyRequests />}
 
-        {activeTab === 'analytics' && (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400 text-center">
-            <TrendingUp size={56} color="#D1D5DB" />
-            <h3 className="text-lg font-bold text-slate-500">Analytics coming soon</h3>
-            <p className="text-sm">We are working on bringing you detailed insights into your performance.</p>
-          </div>
-        )}
+        {activeTab === 'analytics' && <ProviderAnalytics />}
         {activeTab === 'reviews' && (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400 text-center">
             <Star size={56} color="#D1D5DB" />
