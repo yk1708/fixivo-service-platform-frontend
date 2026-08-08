@@ -5,9 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   ClipboardList, Clock, CheckCircle2, XCircle, AlertCircle,
   User, Wrench, Calendar, RefreshCw, LogOut, ChevronRight,
-  TrendingUp, Star, Briefcase, Shield, AlertTriangle, Menu, X
+  TrendingUp, Star, Briefcase, Shield, AlertTriangle, Menu, X, Search
 } from 'lucide-react';
 import { logout } from '../../app/slices/authSlice';
+import PageHeader from '../../components/PageHeader';
 import NotificationBell from '../../components/NotificationBell';
 import EmergencyRequests from '../Tabs/EmergencyRequests';
 
@@ -57,6 +58,7 @@ export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState(() => localStorage.getItem('providerFilterTab') || 'all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [confirmRejectId, setConfirmRejectId] = useState(null);
   const [viewRequestId, setViewRequestId] = useState(null);
   const [activeTab, setActiveTab] = useState('requests');
@@ -113,7 +115,16 @@ export default function ProviderDashboard() {
 
   useEffect(() => { fetchRequests(); }, []);
 
-  const filtered = filter === 'all' ? requests : requests.filter(r => r.status === filter);
+  const filtered = requests.filter(r => {
+    const matchesStatus = filter === 'all' || r.status === filter;
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch = !q || 
+      (r.customerId?.name && r.customerId.name.toLowerCase().includes(q)) ||
+      (r.customerId?.email && r.customerId.email.toLowerCase().includes(q)) ||
+      (r.serviceType && r.serviceType.toLowerCase().includes(q)) ||
+      (r.details && r.details.toLowerCase().includes(q));
+    return matchesStatus && matchesSearch;
+  });
   const stats = {
     total: requests.length,
     pending: requests.filter(r => r.status === 'pending').length,
@@ -134,7 +145,7 @@ export default function ProviderDashboard() {
 
   const SidebarContent = () => (
     <>
-      <div className="flex items-center gap-2.5 px-6 mb-9">
+      <div className="flex items-center gap-2.5 px-6 mb-8 pt-1">
         <div className="w-9 h-9 bg-white/20 rounded-[10px] flex items-center justify-center">
           <Wrench size={20} color="#fff" />
         </div>
@@ -151,22 +162,6 @@ export default function ProviderDashboard() {
           <NavBtn tab="services"    icon={<Briefcase size={18} />}     label="My Services" />
         </div>
       </nav>
-
-      <div className="px-4 pt-4 border-t border-white/[0.12] flex items-center gap-2.5">
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <div className="w-9 h-9 rounded-[10px] bg-white/25 text-white font-bold text-[15px] flex items-center justify-center shrink-0">
-            {user?.name?.[0]?.toUpperCase() || 'P'}
-          </div>
-          <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-white truncate">{user?.name || 'Provider'}</p>
-            <p className="text-[11px] text-white/50">Service Provider</p>
-          </div>
-        </div>
-        <button onClick={handleLogout} title="Logout"
-          className="w-[34px] h-[34px] bg-white/[0.12] border-none rounded-[10px] text-white/70 flex items-center justify-center cursor-pointer transition-all shrink-0 hover:bg-red-500/25 hover:text-red-300">
-          <LogOut size={18} />
-        </button>
-      </div>
     </>
   );
 
@@ -204,67 +199,68 @@ export default function ProviderDashboard() {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="flex-1 lg:ml-[250px] p-4 sm:p-6 lg:p-8 overflow-y-auto">
+      <main className="flex-1 lg:ml-[250px] overflow-y-auto min-h-screen bg-slate-50">
 
-        {/* ── Top header ── */}
-        <header className="flex items-start justify-between mb-6 sm:mb-7 flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            {/* Hamburger — mobile/tablet only */}
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 text-slate-600"
-            >
-              <Menu size={20} />
-            </button>
-            <div>
-              <h1 className="text-xl sm:text-[26px] font-extrabold text-slate-900 leading-tight">Dashboard</h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Welcome back, {user?.name || 'Provider'}! 👋</p>
-            </div>
-          </div>
+        {/* ── Page Header Component ── */}
+        <PageHeader
+          title={
+            activeTab === 'requests'
+              ? 'My Requests'
+              : activeTab === 'emergencies'
+              ? 'Emergency Requests'
+              : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
+          }
+          onMenuClick={() => setSidebarOpen(true)}
+        />
 
-          <div className="flex items-center gap-2">
-            {/* Verified badge — hide text on very small screens */}
-            <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-              <Shield size={16} className="text-green-600" />
-              <span className="hidden sm:inline text-sm font-semibold text-green-700">Profile Verified</span>
-            </div>
-            <NotificationBell />
-            <button onClick={fetchRequests}
-              className="flex items-center gap-1.5 px-3 sm:px-[18px] py-2.5 bg-blue-700 text-white border-none rounded-xl text-[13px] font-semibold cursor-pointer transition-colors hover:bg-blue-900">
-              <RefreshCw size={16} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-          </div>
-        </header>
+        <div className="p-4 sm:p-5 lg:p-6 pt-0">
 
         {activeTab === 'requests' && (
           <>
-            {/* ── Stats grid: 2 cols on mobile, 4 on desktop ── */}
-            <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-7">
-              <StatCard icon={ClipboardList} label="Total Requests" value={stats.total}     color="#6366F1" bg="#EEF2FF" />
-              <StatCard icon={Clock}         label="Pending"        value={stats.pending}   color="#F59E0B" bg="#FFFBEB" />
-              <StatCard icon={CheckCircle2}  label="Accepted"       value={stats.accepted}  color="#10B981" bg="#ECFDF5" />
-              <StatCard icon={Star}          label="Completed"      value={stats.completed} color="#F97316" bg="#FFF7ED" />
-            </section>
+            {/* ── Filter tabs & Search Bar ── */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+              {/* Filter tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+                {['all', 'pending', 'accepted', 'completed', 'rejected'].map(f => {
+                  const count = f === 'all' ? requests.length : requests.filter(r => r.status === f).length;
+                  return (
+                    <button key={f} onClick={() => setFilter(f)}
+                      className={`flex items-center gap-1.5 px-4 sm:px-[18px] py-2 rounded-[10px] text-[13px] font-medium cursor-pointer transition-all border whitespace-nowrap shrink-0
+                        ${filter === f ? 'bg-blue-700 border-blue-700 text-white font-semibold shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-700 hover:text-blue-700'}`}>
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                      {count > 0 && (
+                        <span className={`text-[11px] font-bold px-[7px] py-0.5 rounded-full min-w-[20px] text-center
+                          ${filter === f ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-            {/* ── Filter tabs — scrollable row on mobile ── */}
-            <div className="flex gap-2 mb-5 sm:mb-6 overflow-x-auto pb-1 scrollbar-none">
-              {['all', 'pending', 'accepted', 'completed', 'rejected'].map(f => (
-                <button key={f} onClick={() => setFilter(f)}
-                  className={`flex items-center gap-1.5 px-4 sm:px-[18px] py-2 rounded-[10px] text-[13px] font-medium cursor-pointer transition-all border whitespace-nowrap shrink-0
-                    ${filter === f ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-700 hover:text-blue-700'}`}>
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                  {f !== 'all' && requests.filter(r => r.status === f).length > 0 && (
-                    <span className={`text-[11px] font-bold px-[7px] py-0.5 rounded-full min-w-[20px] text-center
-                      ${filter === f ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                      {requests.filter(r => r.status === f).length}
-                    </span>
-                  )}
-                </button>
-              ))}
+              {/* Search Box */}
+              <div className="relative w-full sm:w-64">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search customer, service..."
+                  className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-700 outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700 shadow-sm transition-all placeholder:text-slate-400"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* ── Request cards ── */}
+            {/* ── Table view ── */}
             <section>
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400 text-center">
@@ -283,77 +279,92 @@ export default function ProviderDashboard() {
                   <p className="text-sm">When customers send you service requests, they'll appear here.</p>
                 </div>
               ) : (
-                /* 1 col on mobile, 2 on tablet, auto-fill on desktop */
-                <div className="grid gap-4 sm:gap-[18px] grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-                  {filtered.map(req => {
-                    const customer = req.customerId;
-                    const scheduledDate = req.scheduledTime
-                      ? new Date(req.scheduledTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                      : null;
-                    return (
-                      <div key={req._id} className="bg-white rounded-[18px] border border-slate-100 p-4 sm:p-5 shadow-sm flex flex-col gap-3 sm:gap-3.5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(30,64,175,0.08)]">
-                        <div className="flex items-center gap-3">
-                          <div className="w-[42px] h-[42px] rounded-xl bg-gradient-to-br from-indigo-500 to-blue-700 text-white font-bold text-base flex items-center justify-center shrink-0">
-                            {customer?.name?.[0]?.toUpperCase() || <User size={20} />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-slate-900">{customer?.name || 'Customer'}</p>
-                            <p className="text-xs text-slate-400 truncate">{customer?.email || ''}</p>
-                          </div>
-                          <StatusBadge status={req.status} />
-                        </div>
-                        <div className="flex flex-col gap-2.5">
-                          <div className="flex items-start gap-2.5">
-                            <Wrench size={15} className="text-slate-400 shrink-0 mt-0.5" />
-                            <div>
-                              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-[0.08em]">Service</p>
-                              <p className="text-[13px] text-slate-600 font-medium">{req.serviceType}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-2.5">
-                            <AlertCircle size={15} className="text-slate-400 shrink-0 mt-0.5" />
-                            <div>
-                              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-[0.08em]">Details</p>
-                              <p className="text-[13px] text-slate-600 font-medium">{req.details}</p>
-                            </div>
-                          </div>
-                          {scheduledDate && (
-                            <div className="flex items-start gap-2.5">
-                              <Calendar size={15} className="text-slate-400 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-[0.08em]">Scheduled</p>
-                                <p className="text-[13px] text-slate-600 font-medium">{scheduledDate}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between pt-3 border-t border-slate-50 mt-1">
-                          <span className="text-xs text-slate-400">
-                            {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                          </span>
-                          <div className="flex gap-2">
-                            {req.status === 'pending' ? (
-                              <>
-                                <button onClick={() => handleAcceptRequest(req._id)}
-                                  className="px-4 py-2 rounded-[10px] text-[13px] font-bold cursor-pointer bg-blue-700 text-white border-none transition-all hover:bg-blue-900 hover:shadow-[0_4px_12px_rgba(30,64,175,0.2)]">
-                                  Accept
-                                </button>
-                                <button onClick={() => setConfirmRejectId(req._id)}
-                                  className="px-4 py-2 rounded-[10px] text-[13px] font-bold cursor-pointer bg-red-50 text-red-500 border-none transition-all hover:bg-red-500 hover:text-white">
-                                  Reject
-                                </button>
-                              </>
-                            ) : (
-                              <button onClick={() => setViewRequestId(req._id)}
-                                className="flex items-center gap-1 text-[13px] font-semibold text-blue-700 bg-blue-50 border-none rounded-lg px-3 py-1.5 cursor-pointer transition-all hover:bg-blue-700 hover:text-white">
-                                View Details <ChevronRight size={14} />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                          <th className="py-3.5 px-4 sm:px-6">Customer</th>
+                          <th className="py-3.5 px-4 sm:px-6">Service</th>
+                          {/* <th className="py-3.5 px-4 sm:px-6">Details</th> */}
+                          <th className="py-3.5 px-4 sm:px-6">Scheduled / Date</th>
+                          <th className="py-3.5 px-4 sm:px-6">Status</th>
+                          <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
+                        {filtered.map(req => {
+                          const customer = req.customerId;
+                          const scheduledDate = req.scheduledTime
+                            ? new Date(req.scheduledTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                            : null;
+                          const createdDate = new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                          return (
+                            <tr key={req._id} className="hover:bg-slate-50/60 transition-colors">
+                              <td className="py-4 px-4 sm:px-6">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-700 text-white font-bold text-sm flex items-center justify-center shrink-0">
+                                    {customer?.name?.[0]?.toUpperCase() || <User size={16} />}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-slate-900 truncate">{customer?.name || 'Customer'}</p>
+                                    <p className="text-xs text-slate-400 truncate">{customer?.email || ''}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4 sm:px-6 whitespace-nowrap text-slate-900 font-semibold">
+                                {req.serviceType}
+                              </td>
+                              {/* <td className="py-4 px-4 sm:px-6 max-w-xs truncate text-slate-600" title={req.details}>
+                                {req.details}
+                              </td> */}
+                              <td className="py-4 px-4 sm:px-6 whitespace-nowrap text-xs text-slate-500">
+                                {scheduledDate ? (
+                                  <div>
+                                    <p className="font-semibold text-slate-700">{scheduledDate}</p>
+                                    <p className="text-[11px] text-slate-400">Created: {createdDate}</p>
+                                  </div>
+                                ) : (
+                                  createdDate
+                                )}
+                              </td>
+                              <td className="py-4 px-4 sm:px-6 whitespace-nowrap">
+                                <StatusBadge status={req.status} />
+                              </td>
+                              <td className="py-4 px-4 sm:px-6 whitespace-nowrap text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  {req.status === 'pending' ? (
+                                    <>
+                                      <button
+                                        onClick={() => handleAcceptRequest(req._id)}
+                                        className="px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer bg-blue-700 text-white border-none transition-all hover:bg-blue-900"
+                                      >
+                                        Accept
+                                      </button>
+                                      <button
+                                        onClick={() => setConfirmRejectId(req._id)}
+                                        className="px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer bg-red-50 text-red-500 border-none transition-all hover:bg-red-500 hover:text-white"
+                                      >
+                                        Reject
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={() => setViewRequestId(req._id)}
+                                      className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 border-none rounded-lg px-3 py-1.5 cursor-pointer transition-all hover:bg-blue-700 hover:text-white"
+                                    >
+                                      View Details <ChevronRight size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </section>
@@ -383,6 +394,7 @@ export default function ProviderDashboard() {
             <p className="text-sm">Update your offerings and pricing here.</p>
           </div>
         )}
+        </div>
       </main>
 
       {/* ── Reject confirmation modal ── */}
